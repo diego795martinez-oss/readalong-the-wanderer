@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Read-Along (EFL) — Web Speech API</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Helps the floating bubble stay crisp */
+    #pronounceBubble { will-change: transform; }
+  </style>
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
@@ -56,7 +60,6 @@
 
         <!-- READ TAB -->
         <div id="readTab" class="flex flex-col gap-3 sm:gap-4">
-
           <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div class="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
               <button id="micBtn"
@@ -97,7 +100,7 @@
                 Paragraph <span id="paraIdx">1</span> / <span id="paraTotal">5</span>
               </p>
               <p class="text-xs sm:text-sm text-slate-500" id="hint">
-                Tip: Words turn green as the engine recognizes them (current paragraph only).
+                Tip: Words turn green as the engine recognizes them. Double-click (or long-press) any word to hear it.
               </p>
             </div>
 
@@ -157,7 +160,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
           <footer class="pt-1 pb-2">
             <p class="text-xs text-slate-500">
-              Privacy: Audio is processed locally by your browser using the Web Speech API. Nothing is stored or uploaded by this page.
+              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Nothing is stored or uploaded by this page.
             </p>
           </footer>
         </div>
@@ -171,6 +174,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
                 <h2 class="text-lg sm:text-xl font-bold">Reading Report</h2>
                 <p class="text-sm text-slate-600">
                   Words read correctly (green) vs not yet correct (red), based on best progress per paragraph.
+                  Double-click (or long-press) any word chip to hear it.
                 </p>
               </div>
 
@@ -215,14 +219,9 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
                 <!-- Donut chart (SVG) -->
                 <div class="mt-3 flex items-center justify-center">
                   <svg id="accuracyDonut" width="140" height="140" viewBox="0 0 120 120" class="select-none">
-                    <!-- Background ring -->
                     <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="12" />
-                    <!-- Progress ring -->
                     <circle id="accuracyArc" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="12"
-                      stroke-linecap="round"
-                      stroke-dasharray="0 999"
-                      transform="rotate(-90 60 60)" />
-                    <!-- Center text -->
+                      stroke-linecap="round" stroke-dasharray="0 999" transform="rotate(-90 60 60)" />
                     <text id="accuracyText" x="60" y="64" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">0%</text>
                   </svg>
                 </div>
@@ -265,6 +264,45 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
       </div>
     </main>
+  </div>
+
+  <!-- Pronunciation Bubble (floating) -->
+  <div id="pronounceBubble" class="hidden fixed z-50 max-w-[92vw] sm:max-w-sm">
+    <div class="rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold text-slate-500">Pronunciation practice</p>
+          <p id="pbWord" class="mt-1 text-xl font-bold text-slate-900"></p>
+          <p id="pbLang" class="mt-1 text-xs text-slate-500"></p>
+        </div>
+        <button id="pbClose" class="rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
+          Close
+        </button>
+      </div>
+
+      <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button id="pbPlay"
+          class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+          Play
+        </button>
+        <button id="pbSlow"
+          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+          Slow
+        </button>
+        <button id="pbRepeat"
+          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+          Repeat ×2
+        </button>
+        <button id="pbStop"
+          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+          Stop
+        </button>
+      </div>
+
+      <p class="mt-3 text-xs text-slate-500">
+        Tip: Say it after you hear it. Then try again with “Slow”.
+      </p>
+    </div>
   </div>
 
   <!-- html2canvas for DOM -> image capture (client-side only) -->
@@ -342,6 +380,16 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   const downloadFormat = $('downloadFormat');
   const downloadHint = $('downloadHint');
 
+  // Pronunciation bubble
+  const pronounceBubble = $('pronounceBubble');
+  const pbWord = $('pbWord');
+  const pbLang = $('pbLang');
+  const pbClose = $('pbClose');
+  const pbPlay = $('pbPlay');
+  const pbSlow = $('pbSlow');
+  const pbRepeat = $('pbRepeat');
+  const pbStop = $('pbStop');
+
   // ---------------------------
   // Web Speech Support
   // ---------------------------
@@ -382,7 +430,12 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // Token cache for report display (original words per paragraph)
   let paragraphTokens = []; // [ [{original,norm}] ...]
 
+  // Recognition instance
   let recognition = null;
+
+  // Speech synthesis voices cache
+  let voices = [];
+  let currentPronounceWord = '';
 
   // ---------------------------
   // Helpers
@@ -392,6 +445,13 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     .replace(/['’]/g, '')
     .replace(/[^a-z0-9]+/g, '')
     .trim();
+
+  const cleanWordForPlayback = (w) => {
+    // Keep letters/numbers/apostrophes; remove surrounding punctuation
+    const s = (w || '').trim();
+    const stripped = s.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '');
+    return stripped || s;
+  };
 
   const tokenize = (text) => (text || '')
     .replace(/\s+/g, ' ')
@@ -467,10 +527,157 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     accuracyArc.setAttribute('stroke-dasharray', `${dash} ${Math.max(0, c - dash)}`);
     accuracyText.textContent = `${pct}%`;
     graphLabel.textContent = `${pct}%`;
-
-    // Small semantic coloring shift (optional): keep simple and readable
-    // (We won't change colors dynamically to keep it consistent.)
   };
+
+  // ---------------------------
+  // Pronunciation Bubble (Speech Synthesis)
+  // ---------------------------
+  const loadVoices = () => {
+    voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  };
+
+  const pickVoiceForLang = (lang) => {
+    if (!voices || voices.length === 0) return null;
+    // Prefer exact match, then language prefix, then any English voice.
+    const exact = voices.find(v => (v.lang || '').toLowerCase() === (lang || '').toLowerCase());
+    if (exact) return exact;
+    const prefix = voices.find(v => (v.lang || '').toLowerCase().startsWith((lang || '').toLowerCase().slice(0,2)));
+    if (prefix) return prefix;
+    const english = voices.find(v => (v.lang || '').toLowerCase().startsWith('en'));
+    return english || null;
+  };
+
+  const speakWord = (word, rate = 1) => {
+    if (!window.speechSynthesis) return;
+    const w = cleanWordForPlayback(word);
+    if (!w) return;
+
+    window.speechSynthesis.cancel();
+
+    const utter = new SpeechSynthesisUtterance(w);
+    const lang = langSelect.value || 'en-US';
+    utter.lang = lang;
+    utter.rate = rate;
+
+    const voice = pickVoiceForLang(lang);
+    if (voice) utter.voice = voice;
+
+    window.speechSynthesis.speak(utter);
+  };
+
+  const stopSpeech = () => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+  };
+
+  const positionBubbleNearElement = (el) => {
+    const rect = el.getBoundingClientRect();
+    const bubbleRect = pronounceBubble.getBoundingClientRect();
+
+    // Prefer below; fallback above if near bottom
+    const margin = 10;
+    let top = rect.bottom + margin;
+    let left = rect.left;
+
+    // Clamp horizontally
+    const maxLeft = window.innerWidth - bubbleRect.width - margin;
+    left = Math.max(margin, Math.min(left, maxLeft));
+
+    // If it would go off bottom, place above
+    if (top + bubbleRect.height + margin > window.innerHeight) {
+      top = rect.top - bubbleRect.height - margin;
+      if (top < margin) top = margin; // clamp
+    }
+
+    pronounceBubble.style.top = `${Math.round(top)}px`;
+    pronounceBubble.style.left = `${Math.round(left)}px`;
+  };
+
+  const openPronounceBubble = (anchorEl, word) => {
+    currentPronounceWord = cleanWordForPlayback(word);
+    if (!currentPronounceWord) return;
+
+    pbWord.textContent = currentPronounceWord;
+    pbLang.textContent = `Voice: ${langSelect.value || 'en-US'} (uses your device/browser voices)`;
+
+    pronounceBubble.classList.remove('hidden');
+
+    // Wait a frame so we can measure bubble size accurately
+    requestAnimationFrame(() => {
+      positionBubbleNearElement(anchorEl);
+      // Auto play once (optional). Comment out if you don't want auto-play.
+      speakWord(currentPronounceWord, 1);
+    });
+  };
+
+  const closePronounceBubble = () => {
+    pronounceBubble.classList.add('hidden');
+    currentPronounceWord = '';
+    stopSpeech();
+  };
+
+  // Long-press helper for touch devices
+  const addDblClickAndLongPress = (el, getWordFn) => {
+    let pressTimer = null;
+    const LONG_PRESS_MS = 520;
+
+    el.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const w = getWordFn();
+      openPronounceBubble(el, w);
+    });
+
+    el.addEventListener('pointerdown', (e) => {
+      // Only long-press for touch/pen or if user wants it on mouse too.
+      // We'll allow all pointers; it won't hurt.
+      pressTimer = setTimeout(() => {
+        const w = getWordFn();
+        openPronounceBubble(el, w);
+      }, LONG_PRESS_MS);
+    });
+
+    el.addEventListener('pointerup', () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+    });
+
+    el.addEventListener('pointerleave', () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+    });
+  };
+
+  // Bubble button events
+  pbClose.addEventListener('click', closePronounceBubble);
+  pbPlay.addEventListener('click', () => speakWord(currentPronounceWord, 1));
+  pbSlow.addEventListener('click', () => speakWord(currentPronounceWord, 0.8));
+  pbRepeat.addEventListener('click', () => {
+    if (!currentPronounceWord) return;
+    stopSpeech();
+    speakWord(currentPronounceWord, 1);
+    // Schedule a second playback; duration varies, but 800ms works well for most single words.
+    setTimeout(() => speakWord(currentPronounceWord, 1), 850);
+  });
+  pbStop.addEventListener('click', stopSpeech);
+
+  // Close bubble on outside click
+  document.addEventListener('click', (e) => {
+    if (pronounceBubble.classList.contains('hidden')) return;
+    const target = e.target;
+    if (pronounceBubble.contains(target)) return;
+    closePronounceBubble();
+  });
+
+  // Reposition on resize/scroll if open
+  window.addEventListener('resize', () => {
+    if (pronounceBubble.classList.contains('hidden')) return;
+    // Can't easily know the anchor; keep current position stable
+  });
+  window.addEventListener('scroll', () => {
+    // Close on scroll to avoid weird placements
+    if (!pronounceBubble.classList.contains('hidden')) closePronounceBubble();
+  }, { passive: true });
 
   // ---------------------------
   // Tabs
@@ -508,7 +715,11 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     spanWords = rawTokens.map((tok) => {
       const span = document.createElement('span');
       span.textContent = tok;
-      span.className = 'transition-colors duration-200';
+      span.className = 'transition-colors duration-200 cursor-pointer select-none';
+
+      // Pronunciation: double click / long press
+      addDblClickAndLongPress(span, () => tok);
+
       return { original: tok, norm: normalizeWord(tok), el: span };
     });
 
@@ -540,20 +751,20 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
     for (const w of spanWords) {
       if (!w.norm) {
-        w.el.className = 'transition-colors duration-200 text-slate-900';
+        w.el.className = 'transition-colors duration-200 text-slate-900 cursor-pointer select-none';
         continue;
       }
 
       const idx = normalizedIndex;
 
       if (idx < finalCount) {
-        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-700';
+        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-700 cursor-pointer select-none';
       } else if (idx < combinedCount) {
-        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-500';
+        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-500 cursor-pointer select-none';
       } else if (idx === combinedCount) {
-        w.el.className = 'transition-colors duration-200 text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-4';
+        w.el.className = 'transition-colors duration-200 text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-4 cursor-pointer select-none';
       } else {
-        w.el.className = 'transition-colors duration-200 text-slate-900';
+        w.el.className = 'transition-colors duration-200 text-slate-900 cursor-pointer select-none';
       }
 
       normalizedIndex++;
@@ -619,18 +830,25 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
       const correctTokens = tokens.slice(0, best);
       const incorrectTokens = tokens.slice(best);
 
+      const makeChip = (t, type) => {
+        const chip = document.createElement('span');
+        chip.className =
+          type === 'correct'
+            ? 'rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 cursor-pointer select-none'
+            : 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 cursor-pointer select-none';
+        chip.textContent = t.original;
+
+        addDblClickAndLongPress(chip, () => t.original);
+        return chip;
+      };
+
       if (correctTokens.length === 0) {
         const empty = document.createElement('span');
         empty.className = 'text-sm text-slate-400';
         empty.textContent = '(none yet)';
         correctChips.appendChild(empty);
       } else {
-        correctTokens.forEach(t => {
-          const chip = document.createElement('span');
-          chip.className = 'rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200';
-          chip.textContent = t.original;
-          correctChips.appendChild(chip);
-        });
+        correctTokens.forEach(t => correctChips.appendChild(makeChip(t, 'correct')));
       }
 
       if (incorrectTokens.length === 0) {
@@ -639,12 +857,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
         empty.textContent = '(all words correct!)';
         incorrectChips.appendChild(empty);
       } else {
-        incorrectTokens.forEach(t => {
-          const chip = document.createElement('span');
-          chip.className = 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200';
-          chip.textContent = t.original;
-          incorrectChips.appendChild(chip);
-        });
+        incorrectTokens.forEach(t => incorrectChips.appendChild(makeChip(t, 'incorrect')));
       }
 
       correctWrap.appendChild(correctChips);
@@ -886,7 +1099,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   };
 
   const captureReportAndDownload = async () => {
-    // Ensure report is up-to-date
     renderReport();
 
     const format = (downloadFormat.value || 'png').toLowerCase();
@@ -896,10 +1108,9 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     try {
       downloadHint.textContent = 'Creating image…';
 
-      // render DOM -> canvas
       const canvas = await html2canvas(reportCapture, {
-        backgroundColor: '#f8fafc',  // slate-50
-        scale: 2,                    // sharper text
+        backgroundColor: '#f8fafc',
+        scale: 2,
         useCORS: true
       });
 
@@ -947,9 +1158,16 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   });
 
   langSelect.addEventListener('change', () => {
+    // Also updates speech synthesis voice target
+    loadVoices();
+
     const wasListening = listening;
     if (wasListening) stopListening();
     hardResetRecognition(wasListening);
+
+    if (!pronounceBubble.classList.contains('hidden') && currentPronounceWord) {
+      pbLang.textContent = `Voice: ${langSelect.value || 'en-US'} (uses your device/browser voices)`;
+    }
   });
 
   teacherToggle.addEventListener('change', (e) => {
@@ -979,9 +1197,11 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // ---------------------------
   // Init
   // ---------------------------
-  const setTabButtonStyles = () => {
-    // default styles will be set by setActiveTab
-  };
+  // Load voices (sometimes async; also listen for changes)
+  if (window.speechSynthesis) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = () => loadVoices();
+  }
 
   rebuildParagraphTokensAndProgress();
   renderHeader();
