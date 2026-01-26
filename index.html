@@ -164,52 +164,111 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
         <!-- REPORT TAB -->
         <div id="reportTabPanel" class="hidden">
-          <section class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <!-- Wrapper to screenshot -->
+          <div id="reportCapture" class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 class="text-lg sm:text-xl font-bold">Reading Report</h2>
                 <p class="text-sm text-slate-600">
-                  Shows words read correctly (green) vs not yet read correctly (red), based on your best progress per paragraph.
+                  Words read correctly (green) vs not yet correct (red), based on best progress per paragraph.
                 </p>
               </div>
-              <div class="flex gap-2">
+
+              <div class="grid grid-cols-2 sm:flex gap-2">
                 <button id="refreshReport"
-                  class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                  class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
                   Refresh
                 </button>
                 <button id="clearReport"
-                  class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                  class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
                   Clear Report
                 </button>
               </div>
             </div>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <p class="text-xs font-semibold text-slate-600">Total words</p>
-                <p id="statTotalWords" class="mt-1 text-2xl font-bold">0</p>
+            <!-- Stats + Graph -->
+            <div class="mt-4 grid gap-3 sm:grid-cols-5">
+              <div class="sm:col-span-3 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                  <p class="text-xs font-semibold text-slate-600">Total words</p>
+                  <p id="statTotalWords" class="mt-1 text-2xl font-bold">0</p>
+                </div>
+                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                  <p class="text-xs font-semibold text-slate-600">Correct words</p>
+                  <p id="statCorrectWords" class="mt-1 text-2xl font-bold">0</p>
+                </div>
+                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                  <p class="text-xs font-semibold text-slate-600">Accuracy</p>
+                  <p id="statAccuracy" class="mt-1 text-2xl font-bold">0%</p>
+                </div>
               </div>
-              <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <p class="text-xs font-semibold text-slate-600">Correct words</p>
-                <p id="statCorrectWords" class="mt-1 text-2xl font-bold">0</p>
+
+              <div class="sm:col-span-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-xs font-semibold text-slate-600">Accuracy graph</p>
+                    <p class="text-sm text-slate-600">Overall</p>
+                  </div>
+                  <span id="graphLabel" class="text-xs font-semibold text-slate-500">0%</span>
+                </div>
+
+                <!-- Donut chart (SVG) -->
+                <div class="mt-3 flex items-center justify-center">
+                  <svg id="accuracyDonut" width="140" height="140" viewBox="0 0 120 120" class="select-none">
+                    <!-- Background ring -->
+                    <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="12" />
+                    <!-- Progress ring -->
+                    <circle id="accuracyArc" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="12"
+                      stroke-linecap="round"
+                      stroke-dasharray="0 999"
+                      transform="rotate(-90 60 60)" />
+                    <!-- Center text -->
+                    <text id="accuracyText" x="60" y="64" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">0%</text>
+                  </svg>
+                </div>
               </div>
-              <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <p class="text-xs font-semibold text-slate-600">Accuracy</p>
-                <p id="statAccuracy" class="mt-1 text-2xl font-bold">0%</p>
+            </div>
+
+            <!-- Download -->
+            <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-sm font-bold">Download report image</p>
+                  <p class="text-xs text-slate-600">Saves a screenshot of this Report tab as an image (PNG/JPG).</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <div class="flex-1 sm:flex-none">
+                    <label class="text-xs font-semibold text-slate-600" for="downloadFormat">Format</label>
+                    <select id="downloadFormat"
+                      class="mt-1 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
+                      <option value="png" selected>PNG</option>
+                      <option value="jpg">JPG</option>
+                    </select>
+                  </div>
+
+                  <button id="downloadReport"
+                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                    Download Screenshot
+                  </button>
+                </div>
               </div>
+              <p id="downloadHint" class="mt-2 text-xs text-slate-500"></p>
             </div>
 
             <div class="mt-5 grid gap-4" id="reportList"></div>
 
             <p class="mt-4 text-xs text-slate-500">
-              Note: Matching is tolerant and sequential (it expects the paragraph in order). If a student skips a word, the report may count later words as “not yet correct” even if they were said out of order.
+              Note: Matching is tolerant and sequential (expects in-order). If a student skips a word, later words may show as “not yet correct.”
             </p>
-          </section>
+          </div>
         </div>
 
       </div>
     </main>
   </div>
+
+  <!-- html2canvas for DOM -> image capture (client-side only) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
 (() => {
@@ -264,12 +323,24 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   const tabReportBtn = $('tabReport');
   const readTab = $('readTab');
   const reportTabPanel = $('reportTabPanel');
+
   const refreshReportBtn = $('refreshReport');
   const clearReportBtn = $('clearReport');
   const reportList = $('reportList');
   const statTotalWords = $('statTotalWords');
   const statCorrectWords = $('statCorrectWords');
   const statAccuracy = $('statAccuracy');
+
+  // Graph elements
+  const graphLabel = $('graphLabel');
+  const accuracyArc = $('accuracyArc');
+  const accuracyText = $('accuracyText');
+
+  // Download
+  const reportCapture = $('reportCapture');
+  const downloadReportBtn = $('downloadReport');
+  const downloadFormat = $('downloadFormat');
+  const downloadHint = $('downloadHint');
 
   // ---------------------------
   // Web Speech Support
@@ -281,7 +352,8 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     unsupported.classList.remove('hidden');
     [
       micBtn, prevBtn, nextBtn, restartBtn, langSelect, clearTranscriptBtn,
-      teacherToggle, tabReadBtn, tabReportBtn, refreshReportBtn, clearReportBtn
+      teacherToggle, tabReadBtn, tabReportBtn, refreshReportBtn, clearReportBtn,
+      downloadReportBtn, downloadFormat
     ].forEach(el => {
       el.disabled = true;
       el.classList.add('opacity-50', 'cursor-not-allowed');
@@ -305,7 +377,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   let combinedMatchedCount = 0;
 
   // Report tracking per paragraph (best progress)
-  // bestFinalCount is used for "correct vs not" in the report.
   let progress = []; // [{ bestFinalCount, bestCombinedCount }]
 
   // Token cache for report display (original words per paragraph)
@@ -386,6 +457,21 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     progress = content.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
   };
 
+  // Donut chart update
+  const setAccuracyGraph = (accuracyPct) => {
+    const pct = Math.max(0, Math.min(100, Math.round(accuracyPct)));
+    const r = 46;
+    const c = 2 * Math.PI * r;
+    const dash = (pct / 100) * c;
+
+    accuracyArc.setAttribute('stroke-dasharray', `${dash} ${Math.max(0, c - dash)}`);
+    accuracyText.textContent = `${pct}%`;
+    graphLabel.textContent = `${pct}%`;
+
+    // Small semantic coloring shift (optional): keep simple and readable
+    // (We won't change colors dynamically to keep it consistent.)
+  };
+
   // ---------------------------
   // Tabs
   // ---------------------------
@@ -394,7 +480,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     readTab.classList.toggle('hidden', !isRead);
     reportTabPanel.classList.toggle('hidden', isRead);
 
-    // Button styles
     const active = 'bg-slate-900 text-white ring-slate-900';
     const inactive = 'bg-white text-slate-900 ring-slate-200 hover:bg-slate-50';
 
@@ -447,11 +532,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   };
 
   const renderHighlights = () => {
-    // Colors:
-    // - Final-confirmed words: strong green
-    // - Interim-only words: lighter green
-    // - Next expected word: underline amber
-
     const targetTokens = spanWords.map(w => w.norm).filter(Boolean);
     const finalCount = Math.min(finalMatchedCount, targetTokens.length);
     const combinedCount = Math.min(combinedMatchedCount, targetTokens.length);
@@ -484,14 +564,17 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // Report Rendering
   // ---------------------------
   const renderReport = () => {
-    // Totals
     const totalWords = paragraphTokens.reduce((sum, arr) => sum + arr.length, 0);
-    const correctWords = paragraphTokens.reduce((sum, arr, i) => sum + Math.min(progress[i]?.bestFinalCount || 0, arr.length), 0);
+    const correctWords = paragraphTokens.reduce(
+      (sum, arr, i) => sum + Math.min(progress[i]?.bestFinalCount || 0, arr.length),
+      0
+    );
     const accuracy = totalWords === 0 ? 0 : Math.round((correctWords / totalWords) * 100);
 
     statTotalWords.textContent = String(totalWords);
     statCorrectWords.textContent = String(correctWords);
     statAccuracy.textContent = `${accuracy}%`;
+    setAccuracyGraph(accuracy);
 
     reportList.innerHTML = '';
 
@@ -567,7 +650,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
       correctWrap.appendChild(correctChips);
       incorrectWrap.appendChild(incorrectChips);
 
-      // Quick actions
       const actions = document.createElement('div');
       actions.className = 'mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between';
 
@@ -650,7 +732,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
       setTranscript(finalTranscript, interimTranscript);
 
-      // Match ONLY against current paragraph.
       const targetTokens = spanWords.map(w => w.norm).filter(Boolean);
       finalMatchedCount = computeMatchedCount(tokenize(finalTranscript), targetTokens);
       combinedMatchedCount = computeMatchedCount(tokenize((finalTranscript + ' ' + interimTranscript).trim()), targetTokens);
@@ -665,7 +746,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
       renderHighlights();
 
-      // If report tab is open, keep it live-updated
       if (!reportTabPanel.classList.contains('hidden')) {
         renderReport();
       }
@@ -773,7 +853,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     content = { title: newTitle, author: newAuthor, context: newContext, paragraphs };
     paragraphIndex = 0;
 
-    // Reset report + tokens
     rebuildParagraphTokensAndProgress();
 
     renderHeader();
@@ -786,6 +865,59 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
   const loadDefaultText = () => {
     teacherText.value = `Title: ${DEFAULT.title} by ${DEFAULT.author}\nContext: ${DEFAULT.context}\n\n${DEFAULT.paragraphs.join('\n\n')}`;
+  };
+
+  // ---------------------------
+  // Screenshot Download (Report Tab)
+  // ---------------------------
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const makeTimestamp = () => {
+    const d = new Date();
+    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  };
+
+  const downloadDataUrl = (dataUrl, filename) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const captureReportAndDownload = async () => {
+    // Ensure report is up-to-date
+    renderReport();
+
+    const format = (downloadFormat.value || 'png').toLowerCase();
+    const isJpg = format === 'jpg' || format === 'jpeg';
+    const ext = isJpg ? 'jpg' : 'png';
+
+    try {
+      downloadHint.textContent = 'Creating image…';
+
+      // render DOM -> canvas
+      const canvas = await html2canvas(reportCapture, {
+        backgroundColor: '#f8fafc',  // slate-50
+        scale: 2,                    // sharper text
+        useCORS: true
+      });
+
+      if (isJpg) {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        downloadDataUrl(dataUrl, `read-along-report-${makeTimestamp()}.jpg`);
+      } else {
+        const dataUrl = canvas.toDataURL('image/png');
+        downloadDataUrl(dataUrl, `read-along-report-${makeTimestamp()}.png`);
+      }
+
+      downloadHint.textContent = 'Downloaded.';
+      setTimeout(() => (downloadHint.textContent = ''), 2000);
+    } catch (err) {
+      console.error(err);
+      downloadHint.textContent = 'Could not create image (try Chrome/Edge).';
+      setTimeout(() => (downloadHint.textContent = ''), 4000);
+    }
   };
 
   // ---------------------------
@@ -842,14 +974,21 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     setStatus('Report cleared', '#94a3b8');
   });
 
+  downloadReportBtn.addEventListener('click', captureReportAndDownload);
+
   // ---------------------------
   // Init
   // ---------------------------
+  const setTabButtonStyles = () => {
+    // default styles will be set by setActiveTab
+  };
+
   rebuildParagraphTokensAndProgress();
   renderHeader();
   renderParagraph();
   loadDefaultText();
   renderReport();
+  setAccuracyGraph(0);
 
   setActiveTab('read');
 
