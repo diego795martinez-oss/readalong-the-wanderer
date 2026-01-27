@@ -398,8 +398,11 @@
   let listening = false;
 
   let spanWords = []; // current paragraph word spans
-  let finalTranscript = '';
-  let interimTranscript = '';
+
+  // IMPORTANT CHANGE:
+  // We now accumulate final transcript across stop/resume, so "Stop" pauses instead of restarting.
+  let accumulatedFinalText = ''; // keeps what was read so far (finalized)
+  let interimText = '';          // live interim
   let finalMatchedCount = 0;
   let combinedMatchedCount = 0;
 
@@ -407,6 +410,7 @@
   let paragraphTokens = []; // token cache for report
 
   let recognition = null;
+  let manualStop = false;   // tracks if onend is caused by clicking Stop
 
   // Speech synthesis
   let voices = [];
@@ -474,8 +478,8 @@
   };
 
   const clearRecognitionBufferUI = () => {
-    finalTranscript = '';
-    interimTranscript = '';
+    accumulatedFinalText = '';
+    interimText = '';
     finalMatchedCount = 0;
     combinedMatchedCount = 0;
     setTranscript('', '');
@@ -519,16 +523,13 @@
     studentNameInput.classList.toggle('border-rose-300', !ok);
     studentNameInput.classList.toggle('ring-rose-200', !ok);
 
-    // Only enable Start Reading when name is present (and supported)
     if (isSupported) {
       micBtn.disabled = !ok;
       micBtn.classList.toggle('opacity-50', !ok);
       micBtn.classList.toggle('cursor-not-allowed', !ok);
     }
 
-    // Update report label
     reportStudent.textContent = ok ? studentName : '—';
-
     return ok;
   };
 
@@ -716,6 +717,7 @@
 
     paraIdxEl.textContent = String(paragraphIndex + 1);
 
+    // On paragraph change, we DO reset (by spec)
     clearRecognitionBufferUI();
 
     prevBtn.disabled = paragraphIndex === 0;
@@ -757,7 +759,6 @@
   };
 
   const renderReport = () => {
-    // ensure name label stays synced
     validateName();
 
     const totalWords = paragraphTokens.reduce((sum, arr) => sum + arr.length, 0);
@@ -900,7 +901,11 @@
     recognition.onend = () => {
       listening = false;
       micBtn.textContent = 'Start Reading';
+
+      // IMPORTANT CHANGE:
+      // We do NOT clear anything on Stop. This is a true pause.
       setStatus('Paused', '#94a3b8');
+      manualStop = false;
     };
 
     recognition.onerror = (e) => {
@@ -914,24 +919,29 @@
     };
 
     recognition.onresult = (event) => {
-      let newFinal = '';
+      // IMPORTANT CHANGE:
+      // Accumulate only NEW final pieces using event.resultIndex.
+      // This preserves progress across stop/resume.
       let newInterim = '';
 
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const res = event.results[i];
         const text = res[0].transcript;
-        if (res.isFinal) newFinal += text + ' ';
-        else newInterim += text + ' ';
+        if (res.isFinal) {
+          accumulatedFinalText += (text + ' ');
+        } else {
+          newInterim += (text + ' ');
+        }
       }
 
-      finalTranscript = (newFinal || '').replace(/\s+/g, ' ').trim();
-      interimTranscript = (newInterim || '').replace(/\s+/g, ' ').trim();
+      accumulatedFinalText = accumulatedFinalText.replace(/\s+/g, ' ').trim();
+      interimText = newInterim.replace(/\s+/g, ' ').trim();
 
-      setTranscript(finalTranscript, interimTranscript);
+      setTranscript(accumulatedFinalText, interimText);
 
       const targetTokens = spanWords.map(w => w.norm).filter(Boolean);
-      finalMatchedCount = computeMatchedCount(tokenize(finalTranscript), targetTokens);
-      combinedMatchedCount = computeMatchedCount(tokenize((finalTranscript + ' ' + interimTranscript).trim()), targetTokens);
+      finalMatchedCount = computeMatchedCount(tokenize(accumulatedFinalText), targetTokens);
+      combinedMatchedCount = computeMatchedCount(tokenize((accumulatedFinalText + ' ' + interimText).trim()), targetTokens);
 
       const tLen = paragraphTokens[paragraphIndex]?.length || targetTokens.length;
       const cur = progress[paragraphIndex];
@@ -968,6 +978,7 @@
     recognition = null;
     initRecognition();
 
+    // Clearing here is used ONLY for paragraph changes / restart paragraph / clear transcript.
     clearRecognitionBufferUI();
 
     if (shouldResume) {
@@ -988,6 +999,7 @@
     paragraphIndex = clamped;
     renderParagraph();
 
+    // By spec: when changing paragraphs, buffer resets
     hardResetRecognition(wasListening);
   };
 
@@ -995,7 +1007,7 @@
     const wasListening = listening;
     if (wasListening) stopListening();
 
-    clearRecognitionBufferUI();
+    // Explicit restart (clears buffer)
     hardResetRecognition(wasListening);
   };
 
@@ -1018,7 +1030,6 @@
   };
 
   const captureReportAndDownload = async () => {
-    // If name is required, enforce it before saving report too
     if (!requireNameOrFocus()) return;
 
     renderReport();
@@ -1059,7 +1070,6 @@
   // Events
   // ---------------------------
   studentNameInput.addEventListener('input', () => {
-    // clear error as they type
     validateName();
     if (studentNameInput.value.trim().length > 0) setStatus('Paused', '#94a3b8');
   });
@@ -1073,9 +1083,12 @@
     if (!recognition) initRecognition();
 
     if (!listening) {
-      hardResetRecognition(false);
+      // IMPORTANT CHANGE:
+      // Do NOT reset buffers when resuming. Just start again.
       startListening();
     } else {
+      // True pause — keep transcript + matching progress
+      manualStop = true;
       stopListening();
     }
   });
@@ -1087,8 +1100,16 @@
   clearTranscriptBtn.addEventListener('click', () => {
     const wasListening = listening;
     if (wasListening) stopListening();
+
+    // Explicit clear: wipe buffers
     clearRecognitionBufferUI();
-    hardResetRecognition(wasListening);
+
+    // Re-init to clear engine state too, then resume if needed
+    try { recognition && recognition.abort(); } catch (_) {}
+    recognition = null;
+    initRecognition();
+
+    if (wasListening) setTimeout(() => startListening(), 120);
   });
 
   langSelect.addEventListener('change', () => {
@@ -1096,7 +1117,17 @@
 
     const wasListening = listening;
     if (wasListening) stopListening();
-    hardResetRecognition(wasListening);
+
+    // Changing language should NOT wipe progress; it should just re-init engine.
+    // Keep accumulatedFinalText and interimText as-is.
+    try { recognition && recognition.abort(); } catch (_) {}
+    recognition = null;
+    initRecognition();
+
+    setTranscript(accumulatedFinalText, interimText);
+    renderHighlights();
+
+    if (wasListening) setTimeout(() => startListening(), 120);
 
     if (!pronounceBubble.classList.contains('hidden') && currentPronounceWord) {
       pbLang.textContent = `Voice: ${langSelect.value || 'en-US'} (uses your device/browser voices)`;
@@ -1131,7 +1162,6 @@
 
   setActiveTab('read');
 
-  // Mandatory name: disable mic until set
   validateName();
   if (isSupported) {
     initRecognition();
@@ -1141,4 +1171,3 @@
 </script>
 </body>
 </html>
-
