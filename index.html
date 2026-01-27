@@ -6,7 +6,6 @@
   <title>Read-Along (EFL) — Web Speech API</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Helps the floating bubble stay crisp */
     #pronounceBubble { will-change: transform; }
   </style>
 </head>
@@ -120,44 +119,6 @@
             </div>
           </section>
 
-          <!-- Teacher Mode -->
-          <section class="rounded-2xl bg-white p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <h2 class="text-lg font-bold">Teacher Mode</h2>
-                <p class="text-sm text-slate-600">Paste new text and split it by new lines to create a new paragraph flow.</p>
-              </div>
-              <label class="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 select-none">
-                <input id="teacherToggle" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-slate-900 focus:ring-slate-200" />
-                Edit
-              </label>
-            </div>
-
-            <div id="teacherPanel" class="hidden mt-4">
-              <div class="grid gap-3">
-                <textarea id="teacherText"
-                  class="min-h-[160px] w-full rounded-xl border border-slate-200 bg-white p-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200"
-                  placeholder="Paste text here.
-
-Tip: If you include lines starting with 'Title:' and 'Context:', they will update the header."></textarea>
-
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p class="text-xs sm:text-sm text-slate-600">Rules: non-empty lines become paragraphs. Recognition + report reset on update.</p>
-                  <div class="flex gap-2">
-                    <button id="loadDefault"
-                      class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                      Load Default
-                    </button>
-                    <button id="applyTeacher"
-                      class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                      Apply Text
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <footer class="pt-1 pb-2">
             <p class="text-xs text-slate-500">
               Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Nothing is stored or uploaded by this page.
@@ -216,9 +177,8 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
                   <span id="graphLabel" class="text-xs font-semibold text-slate-500">0%</span>
                 </div>
 
-                <!-- Donut chart (SVG) -->
                 <div class="mt-3 flex items-center justify-center">
-                  <svg id="accuracyDonut" width="140" height="140" viewBox="0 0 120 120" class="select-none">
+                  <svg width="140" height="140" viewBox="0 0 120 120" class="select-none">
                     <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="12" />
                     <circle id="accuracyArc" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="12"
                       stroke-linecap="round" stroke-dasharray="0 999" transform="rotate(-90 60 60)" />
@@ -311,9 +271,9 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 <script>
 (() => {
   // ---------------------------
-  // Default Content
+  // Fixed Content (Teacher Mode removed)
   // ---------------------------
-  const DEFAULT = {
+  const CONTENT = {
     title: 'THE WANDERER',
     author: 'Sharon Creech',
     context: 'The main character, Sophie, is an orphan adopted by uncles. She is sailing across the Atlantic with her cousins.',
@@ -349,12 +309,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
   const paraIdxEl = $('paraIdx');
   const paraTotalEl = $('paraTotal');
-
-  const teacherToggle = $('teacherToggle');
-  const teacherPanel = $('teacherPanel');
-  const teacherText = $('teacherText');
-  const applyTeacher = $('applyTeacher');
-  const loadDefault = $('loadDefault');
 
   // Tabs + report
   const tabReadBtn = $('tabRead');
@@ -400,7 +354,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     unsupported.classList.remove('hidden');
     [
       micBtn, prevBtn, nextBtn, restartBtn, langSelect, clearTranscriptBtn,
-      teacherToggle, tabReadBtn, tabReportBtn, refreshReportBtn, clearReportBtn,
+      tabReadBtn, tabReportBtn, refreshReportBtn, clearReportBtn,
       downloadReportBtn, downloadFormat
     ].forEach(el => {
       el.disabled = true;
@@ -411,7 +365,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // ---------------------------
   // State
   // ---------------------------
-  let content = structuredClone(DEFAULT);
   let paragraphIndex = 0;
   let listening = false;
 
@@ -427,10 +380,10 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // Report tracking per paragraph (best progress)
   let progress = []; // [{ bestFinalCount, bestCombinedCount }]
 
-  // Token cache for report display (original words per paragraph)
+  // Token cache for report display
   let paragraphTokens = []; // [ [{original,norm}] ...]
 
-  // Recognition instance
+  // Recognition
   let recognition = null;
 
   // Speech synthesis voices cache
@@ -447,7 +400,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     .trim();
 
   const cleanWordForPlayback = (w) => {
-    // Keep letters/numbers/apostrophes; remove surrounding punctuation
     const s = (w || '').trim();
     const stripped = s.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '');
     return stripped || s;
@@ -460,7 +412,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     .map(normalizeWord)
     .filter(Boolean);
 
-  // Greedy tolerant matcher (in-order; ignores extra tokens)
   const computeMatchedCount = (heardTokens, targetTokens) => {
     let i = 0;
     for (const t of heardTokens) {
@@ -509,15 +460,14 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     renderHighlights();
   };
 
-  const rebuildParagraphTokensAndProgress = () => {
-    paragraphTokens = content.paragraphs.map(p => {
+  const buildTokensAndProgress = () => {
+    paragraphTokens = CONTENT.paragraphs.map(p => {
       const raw = (p || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
       return raw.map(tok => ({ original: tok, norm: normalizeWord(tok) })).filter(t => t.norm);
     });
-    progress = content.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
+    progress = CONTENT.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
   };
 
-  // Donut chart update
   const setAccuracyGraph = (accuracyPct) => {
     const pct = Math.max(0, Math.min(100, Math.round(accuracyPct)));
     const r = 46;
@@ -538,7 +488,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
   const pickVoiceForLang = (lang) => {
     if (!voices || voices.length === 0) return null;
-    // Prefer exact match, then language prefix, then any English voice.
     const exact = voices.find(v => (v.lang || '').toLowerCase() === (lang || '').toLowerCase());
     if (exact) return exact;
     const prefix = voices.find(v => (v.lang || '').toLowerCase().startsWith((lang || '').toLowerCase().slice(0,2)));
@@ -574,19 +523,16 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     const rect = el.getBoundingClientRect();
     const bubbleRect = pronounceBubble.getBoundingClientRect();
 
-    // Prefer below; fallback above if near bottom
     const margin = 10;
     let top = rect.bottom + margin;
     let left = rect.left;
 
-    // Clamp horizontally
     const maxLeft = window.innerWidth - bubbleRect.width - margin;
     left = Math.max(margin, Math.min(left, maxLeft));
 
-    // If it would go off bottom, place above
     if (top + bubbleRect.height + margin > window.innerHeight) {
       top = rect.top - bubbleRect.height - margin;
-      if (top < margin) top = margin; // clamp
+      if (top < margin) top = margin;
     }
 
     pronounceBubble.style.top = `${Math.round(top)}px`;
@@ -602,10 +548,8 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
     pronounceBubble.classList.remove('hidden');
 
-    // Wait a frame so we can measure bubble size accurately
     requestAnimationFrame(() => {
       positionBubbleNearElement(anchorEl);
-      // Auto play once (optional). Comment out if you don't want auto-play.
       speakWord(currentPronounceWord, 1);
     });
   };
@@ -616,7 +560,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     stopSpeech();
   };
 
-  // Long-press helper for touch devices
   const addDblClickAndLongPress = (el, getWordFn) => {
     let pressTimer = null;
     const LONG_PRESS_MS = 520;
@@ -624,31 +567,21 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     el.addEventListener('dblclick', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const w = getWordFn();
-      openPronounceBubble(el, w);
+      openPronounceBubble(el, getWordFn());
     });
 
-    el.addEventListener('pointerdown', (e) => {
-      // Only long-press for touch/pen or if user wants it on mouse too.
-      // We'll allow all pointers; it won't hurt.
-      pressTimer = setTimeout(() => {
-        const w = getWordFn();
-        openPronounceBubble(el, w);
-      }, LONG_PRESS_MS);
+    el.addEventListener('pointerdown', () => {
+      pressTimer = setTimeout(() => openPronounceBubble(el, getWordFn()), LONG_PRESS_MS);
     });
 
-    el.addEventListener('pointerup', () => {
+    const clear = () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
-    });
-
-    el.addEventListener('pointerleave', () => {
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = null;
-    });
+    };
+    el.addEventListener('pointerup', clear);
+    el.addEventListener('pointerleave', clear);
   };
 
-  // Bubble button events
   pbClose.addEventListener('click', closePronounceBubble);
   pbPlay.addEventListener('click', () => speakWord(currentPronounceWord, 1));
   pbSlow.addEventListener('click', () => speakWord(currentPronounceWord, 0.8));
@@ -656,26 +589,17 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     if (!currentPronounceWord) return;
     stopSpeech();
     speakWord(currentPronounceWord, 1);
-    // Schedule a second playback; duration varies, but 800ms works well for most single words.
     setTimeout(() => speakWord(currentPronounceWord, 1), 850);
   });
   pbStop.addEventListener('click', stopSpeech);
 
-  // Close bubble on outside click
   document.addEventListener('click', (e) => {
     if (pronounceBubble.classList.contains('hidden')) return;
-    const target = e.target;
-    if (pronounceBubble.contains(target)) return;
+    if (pronounceBubble.contains(e.target)) return;
     closePronounceBubble();
   });
 
-  // Reposition on resize/scroll if open
-  window.addEventListener('resize', () => {
-    if (pronounceBubble.classList.contains('hidden')) return;
-    // Can't easily know the anchor; keep current position stable
-  });
   window.addEventListener('scroll', () => {
-    // Close on scroll to avoid weird placements
     if (!pronounceBubble.classList.contains('hidden')) closePronounceBubble();
   }, { passive: true });
 
@@ -704,22 +628,20 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   }[c]));
 
   const renderHeader = () => {
-    titleEl.innerHTML = `${escapeHtml(content.title)} <span class="text-slate-500 font-semibold">by ${escapeHtml(content.author || '')}</span>`;
-    contextEl.textContent = content.context || '';
+    titleEl.innerHTML = `${escapeHtml(CONTENT.title)} <span class="text-slate-500 font-semibold">by ${escapeHtml(CONTENT.author || '')}</span>`;
+    contextEl.textContent = CONTENT.context || '';
+    paraTotalEl.textContent = String(CONTENT.paragraphs.length);
   };
 
   const renderParagraph = () => {
-    const paragraph = content.paragraphs[paragraphIndex] || '';
+    const paragraph = CONTENT.paragraphs[paragraphIndex] || '';
     const rawTokens = paragraph.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
 
     spanWords = rawTokens.map((tok) => {
       const span = document.createElement('span');
       span.textContent = tok;
       span.className = 'transition-colors duration-200 cursor-pointer select-none';
-
-      // Pronunciation: double click / long press
       addDblClickAndLongPress(span, () => tok);
-
       return { original: tok, norm: normalizeWord(tok), el: span };
     });
 
@@ -730,12 +652,12 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     });
 
     paraIdxEl.textContent = String(paragraphIndex + 1);
-    paraTotalEl.textContent = String(content.paragraphs.length);
 
     clearRecognitionBufferUI();
 
     prevBtn.disabled = paragraphIndex === 0;
-    nextBtn.disabled = paragraphIndex === content.paragraphs.length - 1;
+    nextBtn.disabled = paragraphIndex === CONTENT.paragraphs.length - 1;
+
     [prevBtn, nextBtn].forEach(btn => {
       btn.classList.toggle('opacity-50', btn.disabled);
       btn.classList.toggle('cursor-not-allowed', btn.disabled);
@@ -771,9 +693,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     }
   };
 
-  // ---------------------------
-  // Report Rendering
-  // ---------------------------
   const renderReport = () => {
     const totalWords = paragraphTokens.reduce((sum, arr) => sum + arr.length, 0);
     const correctWords = paragraphTokens.reduce(
@@ -789,7 +708,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
     reportList.innerHTML = '';
 
-    content.paragraphs.forEach((p, i) => {
+    CONTENT.paragraphs.forEach((_, i) => {
       const tokens = paragraphTokens[i] || [];
       const best = Math.min(progress[i]?.bestFinalCount || 0, tokens.length);
       const pct = tokens.length ? Math.round((best / tokens.length) * 100) : 0;
@@ -837,7 +756,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
             ? 'rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 cursor-pointer select-none'
             : 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 cursor-pointer select-none';
         chip.textContent = t.original;
-
         addDblClickAndLongPress(chip, () => t.original);
         return chip;
       };
@@ -949,7 +867,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
       finalMatchedCount = computeMatchedCount(tokenize(finalTranscript), targetTokens);
       combinedMatchedCount = computeMatchedCount(tokenize((finalTranscript + ' ' + interimTranscript).trim()), targetTokens);
 
-      // Update best progress for report
       const tLen = paragraphTokens[paragraphIndex]?.length || targetTokens.length;
       const cur = progress[paragraphIndex];
       if (cur) {
@@ -996,7 +913,7 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // Navigation
   // ---------------------------
   const goToParagraph = (idx) => {
-    const clamped = Math.max(0, Math.min(idx, content.paragraphs.length - 1));
+    const clamped = Math.max(0, Math.min(idx, CONTENT.paragraphs.length - 1));
     if (clamped === paragraphIndex) return;
 
     const wasListening = listening;
@@ -1014,70 +931,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
     clearRecognitionBufferUI();
     hardResetRecognition(wasListening);
-  };
-
-  // ---------------------------
-  // Teacher Mode Parsing
-  // ---------------------------
-  const applyTeacherText = () => {
-    const raw = (teacherText.value || '').replace(/\r\n/g, '\n');
-    const lines = raw.split('\n').map(l => l.trim());
-
-    let newTitle = content.title;
-    let newAuthor = content.author;
-    let newContext = content.context;
-
-    const paragraphs = [];
-    for (const line of lines) {
-      if (!line) continue;
-
-      if (/^title\s*:/i.test(line)) {
-        const t = line.replace(/^title\s*:/i, '').trim();
-        const byMatch = t.match(/^(.*)\s+by\s+(.*)$/i);
-        if (byMatch) {
-          newTitle = byMatch[1].trim() || newTitle;
-          newAuthor = byMatch[2].trim() || newAuthor;
-        } else {
-          newTitle = t || newTitle;
-        }
-        continue;
-      }
-
-      if (/^author\s*:/i.test(line)) {
-        newAuthor = line.replace(/^author\s*:/i, '').trim() || newAuthor;
-        continue;
-      }
-
-      if (/^context\s*:/i.test(line)) {
-        newContext = line.replace(/^context\s*:/i, '').trim() || newContext;
-        continue;
-      }
-
-      paragraphs.push(line);
-    }
-
-    if (paragraphs.length === 0) {
-      setStatus('Teacher text had no paragraphs', '#f59e0b');
-      return;
-    }
-
-    if (listening) stopListening();
-
-    content = { title: newTitle, author: newAuthor, context: newContext, paragraphs };
-    paragraphIndex = 0;
-
-    rebuildParagraphTokensAndProgress();
-
-    renderHeader();
-    renderParagraph();
-    renderReport();
-
-    hardResetRecognition(false);
-    setStatus('Paused', '#94a3b8');
-  };
-
-  const loadDefaultText = () => {
-    teacherText.value = `Title: ${DEFAULT.title} by ${DEFAULT.author}\nContext: ${DEFAULT.context}\n\n${DEFAULT.paragraphs.join('\n\n')}`;
   };
 
   // ---------------------------
@@ -1103,7 +956,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
 
     const format = (downloadFormat.value || 'png').toLowerCase();
     const isJpg = format === 'jpg' || format === 'jpeg';
-    const ext = isJpg ? 'jpg' : 'png';
 
     try {
       downloadHint.textContent = 'Creating image…';
@@ -1158,7 +1010,6 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   });
 
   langSelect.addEventListener('change', () => {
-    // Also updates speech synthesis voice target
     loadVoices();
 
     const wasListening = listening;
@@ -1170,24 +1021,12 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
     }
   });
 
-  teacherToggle.addEventListener('change', (e) => {
-    teacherPanel.classList.toggle('hidden', !e.target.checked);
-    if (e.target.checked && !teacherText.value.trim()) loadDefaultText();
-  });
-
-  applyTeacher.addEventListener('click', applyTeacherText);
-  loadDefault.addEventListener('click', () => {
-    loadDefaultText();
-    setStatus('Paused', '#94a3b8');
-  });
-
-  // Tabs
   tabReadBtn.addEventListener('click', () => setActiveTab('read'));
   tabReportBtn.addEventListener('click', () => setActiveTab('report'));
 
   refreshReportBtn.addEventListener('click', renderReport);
   clearReportBtn.addEventListener('click', () => {
-    progress = content.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
+    progress = CONTENT.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
     renderReport();
     setStatus('Report cleared', '#94a3b8');
   });
@@ -1197,16 +1036,14 @@ Tip: If you include lines starting with 'Title:' and 'Context:', they will updat
   // ---------------------------
   // Init
   // ---------------------------
-  // Load voices (sometimes async; also listen for changes)
   if (window.speechSynthesis) {
     loadVoices();
     window.speechSynthesis.onvoiceschanged = () => loadVoices();
   }
 
-  rebuildParagraphTokensAndProgress();
+  buildTokensAndProgress();
   renderHeader();
   renderParagraph();
-  loadDefaultText();
   renderReport();
   setAccuracyGraph(0);
 
