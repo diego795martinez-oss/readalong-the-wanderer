@@ -146,7 +146,7 @@
 
           <footer class="pt-1 pb-2">
             <p class="text-xs text-slate-500">
-              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Definitions use a free dictionary endpoint (no audio) and send only the clicked word.
+              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Definitions use a free dictionary endpoint and send only the selected word.
             </p>
           </footer>
         </div>
@@ -273,21 +273,26 @@
         <!-- FULL TEXT + HIGHLIGHT TAB -->
         <div id="textTabPanel" class="hidden">
           <section class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 class="text-lg sm:text-xl font-bold">Full Text & Highlight</h2>
-                <p class="mt-1 text-sm text-slate-600">
-                  Select words/sentences with your mouse (or long-press and drag on mobile), then click <span class="font-semibold">Highlight</span>.
-                  Double-click a word for pronunciation + definition.
-                </p>
-              </div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-lg sm:text-xl font-bold">Full Text & Highlight</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                Select words/sentences, then press <span class="font-semibold">Highlight</span>.
+                Double-click a word for pronunciation + definition.
+              </p>
+            </div>
 
-              <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <div class="flex-1 sm:flex-none">
-                  <label class="text-xs font-semibold text-slate-600">Highlight color</label>
-                  <div class="mt-1 flex flex-wrap gap-2" id="colorPalette"></div>
+            <!-- ✅ Toolbar that fits inside width (wraps, no overflow) -->
+            <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <div class="flex flex-col gap-3">
+                <div class="min-w-0">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold text-slate-600">Highlight color</p>
+                    <p class="text-xs text-slate-500">Selected color is used for the next highlight.</p>
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-2" id="colorPalette"></div>
                 </div>
-                <div class="flex gap-2">
+
+                <div class="flex flex-wrap gap-2 justify-start sm:justify-end">
                   <button id="applyHighlight"
                     class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
                     Highlight
@@ -300,15 +305,20 @@
               </div>
             </div>
 
-            <div class="mt-5 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200">
-              <p class="text-xs font-semibold text-slate-500 mb-2">Tip</p>
-              <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1">
-                <li><span class="font-semibold">Highlight:</span> select text then click Highlight.</li>
-                <li><span class="font-semibold">Word help:</span> double-click a word for pronunciation + definition.</li>
-              </ul>
+            <!-- ✅ New: Highlighted fragments box (columns by color) -->
+            <div class="mt-4 rounded-2xl bg-white p-4 sm:p-5 shadow-sm ring-1 ring-slate-200">
+              <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-sm font-bold">Your highlighted fragments</p>
+                  <p class="text-xs text-slate-600">Every time you highlight, the selected text is saved here under that color.</p>
+                </div>
+                <div class="text-xs text-slate-500">Tip: Click a fragment to scroll to it.</div>
+              </div>
+
+              <div id="fragmentsGrid" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
             </div>
 
-            <div id="fullTextContainer" class="mt-5 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200"></div>
+            <div id="fullTextContainer" class="mt-4 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200"></div>
           </section>
 
           <p class="mt-3 text-xs text-slate-500">
@@ -450,6 +460,7 @@
   const colorPalette = $('colorPalette');
   const applyHighlightBtn = $('applyHighlight');
   const clearHighlightsBtn = $('clearHighlights');
+  const fragmentsGrid = $('fragmentsGrid');
 
   // Pronunciation + definition bubble
   const pronounceBubble = $('pronounceBubble');
@@ -508,14 +519,19 @@
 
   // Highlighting
   const HIGHLIGHT_COLORS = [
-    { name: 'Yellow', bg: '#FEF08A' },
-    { name: 'Green',  bg: '#BBF7D0' },
-    { name: 'Blue',   bg: '#BFDBFE' },
-    { name: 'Pink',   bg: '#FBCFE8' },
-    { name: 'Purple', bg: '#DDD6FE' },
-    { name: 'Orange', bg: '#FED7AA' },
+    { key: 'yellow', name: 'Yellow', bg: '#FEF08A' },
+    { key: 'green',  name: 'Green',  bg: '#BBF7D0' },
+    { key: 'blue',   name: 'Blue',   bg: '#BFDBFE' },
+    { key: 'pink',   name: 'Pink',   bg: '#FBCFE8' },
+    { key: 'purple', name: 'Purple', bg: '#DDD6FE' },
+    { key: 'orange', name: 'Orange', bg: '#FED7AA' },
   ];
-  let selectedHighlight = HIGHLIGHT_COLORS[0].bg;
+  let selectedHighlight = HIGHLIGHT_COLORS[0];
+
+  // ✅ Saved fragments grouped by color
+  // fragmentsByColor[colorKey] = [{ id, text, markEl }]
+  const fragmentsByColor = Object.fromEntries(HIGHLIGHT_COLORS.map(c => [c.key, []]));
+  let fragmentIdSeq = 1;
 
   // ---------------------------
   // Helpers
@@ -617,6 +633,12 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
+  const clampSnippet = (s, max = 130) => {
+    const t = (s || '').replace(/\s+/g, ' ').trim();
+    if (t.length <= max) return t;
+    return t.slice(0, max - 1) + '…';
+  };
+
   // ---------------------------
   // Mandatory name logic
   // ---------------------------
@@ -649,7 +671,7 @@
   };
 
   // ---------------------------
-  // Speech synthesis + bubble + definition
+  // Speech synthesis + bubble + definition (dblclick only)
   // ---------------------------
   const loadVoices = () => {
     voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -768,7 +790,7 @@
     stopSpeech();
   };
 
-  // ✅ ONLY double-click opens the bubble now (no single click / no long-press)
+  // ✅ ONLY double-click opens the bubble
   const addWordHelpEvents = (el, getWordFn) => {
     el.addEventListener('dblclick', (e) => {
       e.preventDefault();
@@ -838,7 +860,6 @@
       const span = document.createElement('span');
       span.textContent = tok;
       span.className = 'transition-colors duration-200 cursor-pointer select-none';
-      // Word help: double-click only
       addWordHelpEvents(span, () => tok);
       return { original: tok, norm: normalizeWord(tok), el: span };
     });
@@ -904,9 +925,7 @@
         : 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 cursor-pointer select-none';
     chip.textContent = t.original;
 
-    // Word help: double-click only
     addWordHelpEvents(chip, () => t.original);
-
     return chip;
   };
 
@@ -950,7 +969,7 @@
   };
 
   // ---------------------------
-  // Full Text + Highlight (selection-based)
+  // Full Text + Highlight (selection-based) + fragments box
   // ---------------------------
   const renderColorPalette = () => {
     colorPalette.innerHTML = '';
@@ -962,16 +981,19 @@
         <span class="h-4 w-4 rounded-md ring-1 ring-slate-200" style="background:${c.bg}"></span>
         <span>${c.name}</span>
       `;
+
       const markSelected = () => {
         [...colorPalette.children].forEach(x => x.classList.remove('ring-2', 'ring-slate-900'));
         btn.classList.add('ring-2', 'ring-slate-900');
       };
+
       btn.addEventListener('click', () => {
-        selectedHighlight = c.bg;
+        selectedHighlight = c;
         markSelected();
       });
+
       colorPalette.appendChild(btn);
-      if (c.bg === selectedHighlight) markSelected();
+      if (c.key === selectedHighlight.key) markSelected();
     });
   };
 
@@ -1005,9 +1027,7 @@
         const span = document.createElement('span');
         span.textContent = tok;
         span.className = 'cursor-pointer select-text';
-        // Word help: double-click only
-        addWordHelpEvents(span, () => tok);
-
+        addWordHelpEvents(span, () => tok); // dblclick only
         para.appendChild(span);
         if (i < rawTokens.length - 1) para.appendChild(document.createTextNode(' '));
       });
@@ -1021,6 +1041,59 @@
     if (!sel || sel.rangeCount === 0) return false;
     const range = sel.getRangeAt(0);
     return container.contains(range.commonAncestorContainer);
+  };
+
+  const renderFragmentsBox = () => {
+    fragmentsGrid.innerHTML = '';
+
+    HIGHLIGHT_COLORS.forEach((c) => {
+      const col = document.createElement('div');
+      col.className = 'rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200 min-w-0';
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between gap-2';
+      header.innerHTML = `
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="h-3.5 w-3.5 rounded-md ring-1 ring-slate-200" style="background:${c.bg}"></span>
+          <span class="text-sm font-bold text-slate-900 truncate">${c.name}</span>
+        </div>
+        <span class="text-xs font-semibold text-slate-500">${fragmentsByColor[c.key].length}</span>
+      `;
+      col.appendChild(header);
+
+      const list = document.createElement('div');
+      list.className = 'mt-3 flex flex-col gap-2';
+
+      const items = fragmentsByColor[c.key];
+      if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-sm text-slate-400';
+        empty.textContent = '(no highlights yet)';
+        list.appendChild(empty);
+      } else {
+        items.slice().reverse().forEach((it) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'text-left rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200';
+          btn.innerHTML = `
+            <div class="text-xs font-semibold text-slate-500">Fragment</div>
+            <div class="mt-1 text-sm text-slate-900 break-words">${escapeHtml(clampSnippet(it.text))}</div>
+          `;
+          btn.addEventListener('click', () => {
+            if (it.markEl && document.body.contains(it.markEl)) {
+              it.markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // gentle pulse
+              it.markEl.classList.add('ring-2', 'ring-slate-900');
+              setTimeout(() => it.markEl && it.markEl.classList.remove('ring-2', 'ring-slate-900'), 900);
+            }
+          });
+          list.appendChild(btn);
+        });
+      }
+
+      col.appendChild(list);
+      fragmentsGrid.appendChild(col);
+    });
   };
 
   const applyHighlightToSelection = () => {
@@ -1038,10 +1111,20 @@
       return;
     }
 
+    // Save selected text first (before DOM changes)
+    const selectedText = sel.toString();
+    const cleaned = selectedText.replace(/\s+/g, ' ').trim();
+    if (!cleaned) {
+      setStatus('Selection is empty', '#f59e0b');
+      return;
+    }
+
     const mark = document.createElement('mark');
     mark.className = 'rounded-md px-0.5';
-    mark.style.background = selectedHighlight;
+    mark.style.background = selectedHighlight.bg;
     mark.style.color = '#0f172a';
+    mark.dataset.colorKey = selectedHighlight.key;
+    mark.dataset.fragmentId = String(fragmentIdSeq);
 
     try {
       range.surroundContents(mark);
@@ -1051,7 +1134,12 @@
       range.insertNode(mark);
     }
 
+    // Store fragment (link to mark element for scroll)
+    const id = fragmentIdSeq++;
+    fragmentsByColor[selectedHighlight.key].push({ id, text: cleaned, markEl: mark });
+
     sel.removeAllRanges();
+    renderFragmentsBox();
     setStatus('Highlighted', '#94a3b8');
   };
 
@@ -1063,6 +1151,11 @@
       parent.removeChild(m);
       parent.normalize();
     });
+
+    // Clear fragments
+    HIGHLIGHT_COLORS.forEach(c => fragmentsByColor[c.key] = []);
+    renderFragmentsBox();
+
     setStatus('Highlights cleared', '#94a3b8');
   };
 
@@ -1190,7 +1283,6 @@
   const restartParagraph = () => {
     const wasListening = listening;
     if (wasListening) stopListening();
-
     hardResetForParagraphChange(wasListening);
   };
 
@@ -1265,7 +1357,6 @@
     if (!requireNameOrFocus()) return;
 
     if (!recognition) initRecognition();
-
     if (!listening) startListening();
     else stopListening();
   });
@@ -1329,6 +1420,7 @@
   renderParagraph();
   renderColorPalette();
   buildFullTextDOM();
+  renderFragmentsBox();
   setAccuracyGraph(0);
 
   setActiveTab('read');
