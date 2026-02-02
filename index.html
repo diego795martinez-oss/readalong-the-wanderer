@@ -12,7 +12,6 @@
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
   <div class="mx-auto max-w-4xl px-4 py-6 sm:py-10">
-
     <!-- Header -->
     <header class="mb-6 sm:mb-8">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -47,14 +46,18 @@
       <div class="p-4 sm:p-6">
 
         <!-- Tabs -->
-        <div class="mb-4 flex items-center gap-2">
+        <div class="mb-4 grid grid-cols-3 gap-2">
           <button id="tabRead"
-            class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
+            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
             Read Along
           </button>
           <button id="tabReport"
-            class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
-            Report
+            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
+            Paragraph Report
+          </button>
+          <button id="tabText"
+            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
+            Full Text & Highlight
           </button>
         </div>
 
@@ -75,7 +78,7 @@
               </div>
               <div class="sm:pl-4">
                 <div class="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                  Your name will appear on screenshots.
+                  This name will appear on the report screenshot.
                 </div>
               </div>
             </div>
@@ -114,149 +117,64 @@
             </div>
           </div>
 
-          <!-- Capture Wrapper (for shorter evidence download) -->
-          <div id="readCapture" class="rounded-2xl bg-white ring-1 ring-slate-200">
-            <!-- Paragraph Area -->
-            <section aria-label="Reading paragraph" class="rounded-2xl bg-slate-50 p-4 sm:p-6">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p class="text-xs sm:text-sm font-semibold text-slate-600">
-                    Student: <span id="readStudent" class="text-slate-900 font-bold">—</span>
-                  </p>
-                  <p class="text-xs sm:text-sm font-semibold text-slate-600 mt-1">
-                    Paragraph <span id="paraIdx">1</span> / <span id="paraTotal">5</span>
-                  </p>
-                </div>
-                <p class="text-xs sm:text-sm text-slate-500" id="hint">
-                  Tip: Words turn green as the engine recognizes them. Double-click (or long-press) any word to hear it.
-                </p>
-              </div>
-
-              <div class="mt-4 text-lg sm:text-xl leading-relaxed text-slate-900" id="paragraphDisplay"></div>
-
-              <div class="mt-5">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs sm:text-sm font-semibold text-slate-700">Live transcript (what the computer hears)</p>
-                  <button id="clearTranscript" class="text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900">
-                    Clear
-                  </button>
-                </div>
-
-                <div class="mt-2 rounded-xl bg-white p-3 sm:p-4 text-sm sm:text-base text-slate-700 shadow-sm ring-1 ring-slate-200" id="transcriptBox">
-                  <span class="text-slate-400">(interim results will appear here)</span>
-                </div>
-              </div>
-            </section>
-
-            <!-- PARAGRAPH REPORT (now on the same tab) -->
-            <section class="p-4 sm:p-6 border-t border-slate-200 bg-white rounded-b-2xl">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 class="text-lg font-bold">Paragraph Report</h3>
-                  <p class="text-sm text-slate-600">Short evidence for the current paragraph only.</p>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <div class="flex-1 sm:flex-none">
-                    <label class="text-xs font-semibold text-slate-600" for="downloadParaFormat">Format</label>
-                    <select id="downloadParaFormat"
-                      class="mt-1 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
-                      <option value="png" selected>PNG</option>
-                      <option value="jpg">JPG</option>
-                    </select>
-                  </div>
-
-                  <button id="downloadParagraph"
-                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                    Download Paragraph Evidence
-                  </button>
-                </div>
-              </div>
-              <p id="downloadParaHint" class="mt-2 text-xs text-slate-500"></p>
-
-              <div class="mt-4 grid gap-3 sm:grid-cols-5">
-                <div class="sm:col-span-3 grid gap-3 sm:grid-cols-3">
-                  <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <p class="text-xs font-semibold text-slate-600">Total words</p>
-                    <p id="paraStatTotal" class="mt-1 text-2xl font-bold">0</p>
-                  </div>
-                  <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <p class="text-xs font-semibold text-slate-600">Correct words</p>
-                    <p id="paraStatCorrect" class="mt-1 text-2xl font-bold">0</p>
-                  </div>
-                  <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <p class="text-xs font-semibold text-slate-600">Accuracy</p>
-                    <p id="paraStatAccuracy" class="mt-1 text-2xl font-bold">0%</p>
-                  </div>
-                </div>
-
-                <div class="sm:col-span-2 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-xs font-semibold text-slate-600">Accuracy graph</p>
-                      <p class="text-sm text-slate-600">This paragraph</p>
-                    </div>
-                    <span id="paraGraphLabel" class="text-xs font-semibold text-slate-500">0%</span>
-                  </div>
-
-                  <div class="mt-3 flex items-center justify-center">
-                    <svg width="120" height="120" viewBox="0 0 120 120" class="select-none">
-                      <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="12" />
-                      <circle id="paraAccuracyArc" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="12"
-                        stroke-linecap="round" stroke-dasharray="0 999" transform="rotate(-90 60 60)" />
-                      <text id="paraAccuracyText" x="60" y="64" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">0%</text>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div class="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Correct</p>
-                  <div id="paraCorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
-                </div>
-                <div class="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Not yet correct</p>
-                  <div id="paraIncorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
-                </div>
-              </div>
-
-              <p class="mt-4 text-xs text-slate-500">
-                Matching is tolerant and sequential (expects in-order). If a word is skipped, later words may show as “not yet correct.”
+          <!-- Paragraph Area -->
+          <section aria-label="Reading paragraph" class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs sm:text-sm font-semibold text-slate-600">
+                Paragraph <span id="paraIdx">1</span> / <span id="paraTotal">5</span>
               </p>
-            </section>
-          </div>
+              <p class="text-xs sm:text-sm text-slate-500" id="hint">
+                Tip: Words turn green as the engine recognizes them. Double-click (or long-press) any word to hear it.
+              </p>
+            </div>
+
+            <div class="mt-4 text-lg sm:text-xl leading-relaxed text-slate-900" id="paragraphDisplay"></div>
+
+            <div class="mt-5">
+              <div class="flex items-center justify-between">
+                <p class="text-xs sm:text-sm font-semibold text-slate-700">Live transcript (what the computer hears)</p>
+                <button id="clearTranscript" class="text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900">
+                  Clear
+                </button>
+              </div>
+
+              <div class="mt-2 rounded-xl bg-white p-3 sm:p-4 text-sm sm:text-base text-slate-700 shadow-sm ring-1 ring-slate-200" id="transcriptBox">
+                <span class="text-slate-400">(interim results will appear here)</span>
+              </div>
+            </div>
+          </section>
 
           <footer class="pt-1 pb-2">
             <p class="text-xs text-slate-500">
-              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Nothing is stored or uploaded by this page.
+              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Definitions use a free dictionary endpoint (no audio) and send only the clicked word.
             </p>
           </footer>
         </div>
 
-        <!-- REPORT TAB (short: overall summary + choose paragraph, no long list) -->
+        <!-- PARAGRAPH REPORT TAB -->
         <div id="reportTabPanel" class="hidden">
-          <div class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
+          <div id="reportCapture" class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 class="text-lg sm:text-xl font-bold">Report</h2>
+                <h2 class="text-lg sm:text-xl font-bold">Paragraph Report</h2>
                 <p class="text-sm text-slate-600">
                   Student: <span id="reportStudent" class="font-semibold text-slate-900">—</span>
+                  <span class="mx-2 text-slate-300">•</span>
+                  Paragraph: <span id="reportPara" class="font-semibold text-slate-900">1</span> / <span id="reportParaTotal" class="font-semibold text-slate-900">5</span>
                 </p>
-                <p class="text-sm text-slate-600 mt-1">Overall summary + quick paragraph view (no long list).</p>
+                <p class="text-sm text-slate-600 mt-1">
+                  This report only shows the <span class="font-semibold">current paragraph</span> (shorter screenshot).
+                </p>
               </div>
 
-              <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <div class="flex-1 sm:flex-none">
-                  <label class="text-xs font-semibold text-slate-600" for="reportParaSelect">Paragraph</label>
-                  <select id="reportParaSelect"
-                    class="mt-1 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
-                  </select>
-                </div>
-
-                <button id="clearReport"
-                  class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                  Clear Report
+              <div class="grid grid-cols-2 sm:flex gap-2">
+                <button id="refreshReport"
+                  class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                  Refresh
+                </button>
+                <button id="resetThisPara"
+                  class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                  Reset Paragraph Result
                 </button>
               </div>
             </div>
@@ -264,7 +182,7 @@
             <div class="mt-4 grid gap-3 sm:grid-cols-5">
               <div class="sm:col-span-3 grid gap-3 sm:grid-cols-3">
                 <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Total words</p>
+                  <p class="text-xs font-semibold text-slate-600">Words (this paragraph)</p>
                   <p id="statTotalWords" class="mt-1 text-2xl font-bold">0</p>
                 </div>
                 <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -281,7 +199,7 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <p class="text-xs font-semibold text-slate-600">Accuracy graph</p>
-                    <p class="text-sm text-slate-600">Overall</p>
+                    <p class="text-sm text-slate-600">This paragraph</p>
                   </div>
                   <span id="graphLabel" class="text-xs font-semibold text-slate-500">0%</span>
                 </div>
@@ -298,41 +216,120 @@
             </div>
 
             <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <p class="text-sm font-bold">Selected paragraph preview</p>
-              <p class="text-xs text-slate-600 mt-1">Use the dropdown above. (Evidence download is on the Read tab.)</p>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-sm font-bold">Download this paragraph report</p>
+                  <p class="text-xs text-slate-600">Saves a screenshot of this paragraph report only (PNG/JPG).</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <div class="flex-1 sm:flex-none">
+                    <label class="text-xs font-semibold text-slate-600" for="downloadFormat">Format</label>
+                    <select id="downloadFormat"
+                      class="mt-1 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
+                      <option value="png" selected>PNG</option>
+                      <option value="jpg">JPG</option>
+                    </select>
+                  </div>
 
-              <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Correct</p>
-                  <div id="reportCorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
+                  <button id="downloadReport"
+                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                    Download Screenshot
+                  </button>
                 </div>
-                <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Not yet correct</p>
-                  <div id="reportIncorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
+              </div>
+              <p id="downloadHint" class="mt-2 text-xs text-slate-500"></p>
+            </div>
+
+            <div class="mt-4 rounded-2xl bg-white p-4 sm:p-5 shadow-sm ring-1 ring-slate-200">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm font-bold">Words breakdown</p>
+                  <p class="text-xs text-slate-600">
+                    Correct (green) and not yet correct (red). Double-click (or long-press) any word to hear it.
+                  </p>
                 </div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                  <span>Based on best progress so far</span>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <p class="text-xs font-semibold text-slate-600">Correct</p>
+                <div id="correctChips" class="mt-2 flex flex-wrap gap-2"></div>
+              </div>
+
+              <div class="mt-4">
+                <p class="text-xs font-semibold text-slate-600">Not yet correct</p>
+                <div id="incorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
               </div>
             </div>
 
             <p class="mt-4 text-xs text-slate-500">
-              Tip: For short screenshots, go to a paragraph on “Read Along” and use “Download Paragraph Evidence”.
+              Note: Matching is tolerant and sequential (expects in-order). If a student skips a word, later words may show as “not yet correct.”
             </p>
           </div>
+        </div>
+
+        <!-- FULL TEXT + HIGHLIGHT TAB -->
+        <div id="textTabPanel" class="hidden">
+          <section class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 class="text-lg sm:text-xl font-bold">Full Text & Highlight</h2>
+                <p class="mt-1 text-sm text-slate-600">
+                  Select words/sentences with your mouse (or long-press and drag on mobile), then click <span class="font-semibold">Highlight</span>.
+                  Click a word to see pronunciation + definition.
+                </p>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <div class="flex-1 sm:flex-none">
+                  <label class="text-xs font-semibold text-slate-600">Highlight color</label>
+                  <div class="mt-1 flex flex-wrap gap-2" id="colorPalette"></div>
+                </div>
+                <div class="flex gap-2">
+                  <button id="applyHighlight"
+                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                    Highlight
+                  </button>
+                  <button id="clearHighlights"
+                    class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
+                    Clear highlights
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200">
+              <p class="text-xs font-semibold text-slate-500 mb-2">Tip</p>
+              <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1">
+                <li><span class="font-semibold">Highlight:</span> select text then click Highlight.</li>
+                <li><span class="font-semibold">Pronunciation & definition:</span> tap/click a word.</li>
+              </ul>
+            </div>
+
+            <div id="fullTextContainer" class="mt-5 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200"></div>
+          </section>
+
+          <p class="mt-3 text-xs text-slate-500">
+            Definitions are fetched from a public dictionary endpoint. Only the clicked word is sent to retrieve the meaning.
+          </p>
         </div>
 
       </div>
     </main>
   </div>
 
-  <!-- Pronunciation Bubble (floating) -->
-  <div id="pronounceBubble" class="hidden fixed z-50 max-w-[92vw] sm:max-w-sm">
+  <!-- Pronunciation + Definition Bubble -->
+  <div id="pronounceBubble" class="hidden fixed z-50 max-w-[92vw] sm:max-w-md">
     <div class="rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 p-4">
       <div class="flex items-start justify-between gap-3">
-        <div>
-          <p class="text-xs font-semibold text-slate-500">Pronunciation practice</p>
-          <p id="pbWord" class="mt-1 text-xl font-bold text-slate-900"></p>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-slate-500">Word help</p>
+          <p id="pbWord" class="mt-1 text-xl font-bold text-slate-900 break-words"></p>
           <p id="pbLang" class="mt-1 text-xs text-slate-500"></p>
         </div>
-        <button id="pbClose" class="rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
+        <button id="pbClose" class="shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
           Close
         </button>
       </div>
@@ -356,8 +353,15 @@
         </button>
       </div>
 
+      <div class="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+        <p class="text-xs font-semibold text-slate-600">Definition</p>
+        <div id="pbDef" class="mt-2 text-sm text-slate-700">
+          <span class="text-slate-400">Click a word to load its definition.</span>
+        </div>
+      </div>
+
       <p class="mt-3 text-xs text-slate-500">
-        Tip: Say it after you hear it. Then try again with “Slow”.
+        Tip: Listen, repeat, then try reading it in the paragraph again.
       </p>
     </div>
   </div>
@@ -390,14 +394,14 @@
 
   const titleEl = $('title');
   const contextEl = $('context');
-
   const paragraphDisplay = $('paragraphDisplay');
   const transcriptBox = $('transcriptBox');
 
   const studentNameInput = $('studentName');
   const nameError = $('nameError');
-  const readStudent = $('readStudent');
   const reportStudent = $('reportStudent');
+  const reportPara = $('reportPara');
+  const reportParaTotal = $('reportParaTotal');
 
   const micBtn = $('micBtn');
   const prevBtn = $('prevBtn');
@@ -413,39 +417,41 @@
   const paraIdxEl = $('paraIdx');
   const paraTotalEl = $('paraTotal');
 
-  // Tabs
+  // Tabs + report
   const tabReadBtn = $('tabRead');
   const tabReportBtn = $('tabReport');
+  const tabTextBtn = $('tabText');
   const readTab = $('readTab');
   const reportTabPanel = $('reportTabPanel');
+  const textTabPanel = $('textTabPanel');
 
-  // Read-tab paragraph report
-  const paraStatTotal = $('paraStatTotal');
-  const paraStatCorrect = $('paraStatCorrect');
-  const paraStatAccuracy = $('paraStatAccuracy');
-  const paraGraphLabel = $('paraGraphLabel');
-  const paraAccuracyArc = $('paraAccuracyArc');
-  const paraAccuracyText = $('paraAccuracyText');
-  const paraCorrectChips = $('paraCorrectChips');
-  const paraIncorrectChips = $('paraIncorrectChips');
-  const readCapture = $('readCapture');
-  const downloadParagraphBtn = $('downloadParagraph');
-  const downloadParaFormat = $('downloadParaFormat');
-  const downloadParaHint = $('downloadParaHint');
-
-  // Report tab (short)
-  const reportParaSelect = $('reportParaSelect');
-  const clearReportBtn = $('clearReport');
+  const refreshReportBtn = $('refreshReport');
+  const resetThisParaBtn = $('resetThisPara');
   const statTotalWords = $('statTotalWords');
   const statCorrectWords = $('statCorrectWords');
   const statAccuracy = $('statAccuracy');
+
+  const correctChipsEl = $('correctChips');
+  const incorrectChipsEl = $('incorrectChips');
+
+  // Graph elements
   const graphLabel = $('graphLabel');
   const accuracyArc = $('accuracyArc');
   const accuracyText = $('accuracyText');
-  const reportCorrectChips = $('reportCorrectChips');
-  const reportIncorrectChips = $('reportIncorrectChips');
 
-  // Pronunciation bubble
+  // Download
+  const reportCapture = $('reportCapture');
+  const downloadReportBtn = $('downloadReport');
+  const downloadFormat = $('downloadFormat');
+  const downloadHint = $('downloadHint');
+
+  // Full text highlight
+  const fullTextContainer = $('fullTextContainer');
+  const colorPalette = $('colorPalette');
+  const applyHighlightBtn = $('applyHighlight');
+  const clearHighlightsBtn = $('clearHighlights');
+
+  // Pronunciation + definition bubble
   const pronounceBubble = $('pronounceBubble');
   const pbWord = $('pbWord');
   const pbLang = $('pbLang');
@@ -454,6 +460,7 @@
   const pbSlow = $('pbSlow');
   const pbRepeat = $('pbRepeat');
   const pbStop = $('pbStop');
+  const pbDef = $('pbDef');
 
   // ---------------------------
   // Web Speech Support
@@ -465,7 +472,10 @@
     unsupported.classList.remove('hidden');
     [
       studentNameInput, micBtn, prevBtn, nextBtn, restartBtn, langSelect, clearTranscriptBtn,
-      tabReadBtn, tabReportBtn, clearReportBtn, downloadParagraphBtn, downloadParaFormat, reportParaSelect
+      tabReadBtn, tabReportBtn, tabTextBtn,
+      refreshReportBtn, resetThisParaBtn,
+      downloadReportBtn, downloadFormat,
+      applyHighlightBtn, clearHighlightsBtn
     ].forEach(el => {
       el.disabled = true;
       el.classList.add('opacity-50', 'cursor-not-allowed');
@@ -479,21 +489,33 @@
   let paragraphIndex = 0;
   let listening = false;
 
-  let spanWords = [];
+  let spanWords = []; // current paragraph word spans
 
-  // Pause/resume keeps progress:
+  // Accumulate across stop/resume (pause)
   let accumulatedFinalText = '';
   let interimText = '';
   let finalMatchedCount = 0;
   let combinedMatchedCount = 0;
 
-  let progress = [];
-  let paragraphTokens = [];
+  let progress = [];        // per paragraph best
+  let paragraphTokens = []; // token cache for report
+
   let recognition = null;
 
   // Speech synthesis
   let voices = [];
   let currentPronounceWord = '';
+
+  // Highlighting
+  const HIGHLIGHT_COLORS = [
+    { name: 'Yellow', bg: '#FEF08A' },
+    { name: 'Green',  bg: '#BBF7D0' },
+    { name: 'Blue',   bg: '#BFDBFE' },
+    { name: 'Pink',   bg: '#FBCFE8' },
+    { name: 'Purple', bg: '#DDD6FE' },
+    { name: 'Orange', bg: '#FED7AA' },
+  ];
+  let selectedHighlight = HIGHLIGHT_COLORS[0].bg;
 
   // ---------------------------
   // Helpers
@@ -532,9 +554,9 @@
     statusDot.style.background = dotColor;
   };
 
-  const setTranscript = (finalText, interim) => {
+  const setTranscript = (finalText, interimText) => {
     const f = (finalText || '').trim();
-    const it = (interim || '').trim();
+    const it = (interimText || '').trim();
 
     if (!f && !it) {
       transcriptBox.innerHTML = '<span class="text-slate-400">(interim results will appear here)</span>';
@@ -563,7 +585,6 @@
     combinedMatchedCount = 0;
     setTranscript('', '');
     renderHighlights();
-    renderParagraphReport(); // keep paragraph report synced
   };
 
   const buildTokensAndProgress = () => {
@@ -574,15 +595,15 @@
     progress = CONTENT.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
   };
 
-  const setDonut = (arcEl, textEl, labelEl, accuracyPct) => {
+  const setAccuracyGraph = (accuracyPct) => {
     const pct = Math.max(0, Math.min(100, Math.round(accuracyPct)));
     const r = 46;
     const c = 2 * Math.PI * r;
     const dash = (pct / 100) * c;
 
-    arcEl.setAttribute('stroke-dasharray', `${dash} ${Math.max(0, c - dash)}`);
-    textEl.textContent = `${pct}%`;
-    if (labelEl) labelEl.textContent = `${pct}%`;
+    accuracyArc.setAttribute('stroke-dasharray', `${dash} ${Math.max(0, c - dash)}`);
+    accuracyText.textContent = `${pct}%`;
+    graphLabel.textContent = `${pct}%`;
   };
 
   const sanitizeFilenamePart = (s) => (s || 'student')
@@ -591,12 +612,6 @@
     .replace(/\s+/g, '_')
     .replace(/[^a-z0-9_\-]/g, '')
     .slice(0, 40) || 'student';
-
-  const pad2 = (n) => String(n).padStart(2, '0');
-  const makeTimestamp = () => {
-    const d = new Date();
-    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
-  };
 
   // ---------------------------
   // Mandatory name logic
@@ -613,15 +628,9 @@
       micBtn.disabled = !ok;
       micBtn.classList.toggle('opacity-50', !ok);
       micBtn.classList.toggle('cursor-not-allowed', !ok);
-      downloadParagraphBtn.disabled = !ok;
-      downloadParagraphBtn.classList.toggle('opacity-50', !ok);
-      downloadParagraphBtn.classList.toggle('cursor-not-allowed', !ok);
     }
 
-    const label = ok ? studentName : '—';
-    readStudent.textContent = label;
-    reportStudent.textContent = label;
-
+    reportStudent.textContent = ok ? studentName : '—';
     return ok;
   };
 
@@ -636,7 +645,7 @@
   };
 
   // ---------------------------
-  // Pronunciation Bubble (Speech Synthesis)
+  // Speech synthesis + bubble + definition
   // ---------------------------
   const loadVoices = () => {
     voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -695,18 +704,62 @@
     pronounceBubble.style.left = `${Math.round(left)}px`;
   };
 
-  const openPronounceBubble = (anchorEl, word) => {
+  const escapeHtml = (s) => (s || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  const fetchDefinition = async (word) => {
+    const w = normalizeWord(word);
+    if (!w) return;
+
+    pbDef.innerHTML = `<span class="text-slate-400">Loading definition…</span>`;
+
+    try {
+      // Public dictionary API (no key)
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`);
+      if (!res.ok) throw new Error('not ok');
+      const data = await res.json();
+
+      const entry = Array.isArray(data) ? data[0] : null;
+      const meanings = entry?.meanings || [];
+      const defs = [];
+
+      for (const m of meanings.slice(0, 2)) {
+        const part = m.partOfSpeech || '';
+        const d = m.definitions?.[0]?.definition || '';
+        if (d) defs.push({ part, d });
+      }
+
+      if (defs.length === 0) {
+        pbDef.innerHTML = `<span class="text-slate-500">No definition found.</span>`;
+        return;
+      }
+
+      pbDef.innerHTML = defs.map(x => `
+        <div class="mb-2">
+          <div class="text-xs font-semibold text-slate-600">${escapeHtml(x.part || 'definition')}</div>
+          <div class="text-sm text-slate-800">${escapeHtml(x.d)}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      pbDef.innerHTML = `<span class="text-slate-500">Could not load definition (offline or blocked).</span>`;
+    }
+  };
+
+  const openWordHelpBubble = (anchorEl, word, autoSpeak = true) => {
     currentPronounceWord = cleanWordForPlayback(word);
     if (!currentPronounceWord) return;
 
     pbWord.textContent = currentPronounceWord;
-    pbLang.textContent = `Voice: ${langSelect.value || 'en-US'} (uses your device/browser voices)`;
+    pbLang.textContent = `Pronunciation voice: ${langSelect.value || 'en-US'} (device/browser voices)`;
+    pbDef.innerHTML = `<span class="text-slate-400">Loading definition…</span>`;
 
     pronounceBubble.classList.remove('hidden');
 
     requestAnimationFrame(() => {
       positionBubbleNearElement(anchorEl);
-      speakWord(currentPronounceWord, 1);
+      if (autoSpeak) speakWord(currentPronounceWord, 1);
+      fetchDefinition(currentPronounceWord);
     });
   };
 
@@ -716,18 +769,26 @@
     stopSpeech();
   };
 
-  const addDblClickAndLongPress = (el, getWordFn) => {
+  const addWordHelpEvents = (el, getWordFn) => {
+    // Single click/tap -> bubble with definition + pronunciation
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openWordHelpBubble(el, getWordFn(), true);
+    });
+
+    // Also support dblclick and long press (nice on mobile)
     let pressTimer = null;
     const LONG_PRESS_MS = 520;
 
     el.addEventListener('dblclick', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      openPronounceBubble(el, getWordFn());
+      openWordHelpBubble(el, getWordFn(), true);
     });
 
     el.addEventListener('pointerdown', () => {
-      pressTimer = setTimeout(() => openPronounceBubble(el, getWordFn()), LONG_PRESS_MS);
+      pressTimer = setTimeout(() => openWordHelpBubble(el, getWordFn(), true), LONG_PRESS_MS);
     });
 
     const clear = () => {
@@ -764,32 +825,31 @@
   // ---------------------------
   const setActiveTab = (tab) => {
     const isRead = tab === 'read';
+    const isReport = tab === 'report';
+    const isText = tab === 'text';
+
     readTab.classList.toggle('hidden', !isRead);
-    reportTabPanel.classList.toggle('hidden', isRead);
+    reportTabPanel.classList.toggle('hidden', !isReport);
+    textTabPanel.classList.toggle('hidden', !isText);
 
     const active = 'bg-slate-900 text-white ring-slate-900';
     const inactive = 'bg-white text-slate-900 ring-slate-200 hover:bg-slate-50';
 
-    tabReadBtn.className = `flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isRead ? active : inactive}`;
-    tabReportBtn.className = `flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${!isRead ? active : inactive}`;
+    tabReadBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isRead ? active : inactive}`;
+    tabReportBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isReport ? active : inactive}`;
+    tabTextBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isText ? active : inactive}`;
 
-    if (!isRead) {
-      renderOverallReport();
-      renderReportTabParagraph(reportParaSelect.value ? Number(reportParaSelect.value) : paragraphIndex);
-    }
+    if (isReport) renderParagraphReport();
   };
 
   // ---------------------------
-  // Rendering
+  // Rendering: header + read-along paragraph
   // ---------------------------
-  const escapeHtml = (s) => (s || '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-
   const renderHeader = () => {
     titleEl.innerHTML = `${escapeHtml(CONTENT.title)} <span class="text-slate-500 font-semibold">by ${escapeHtml(CONTENT.author || '')}</span>`;
     contextEl.textContent = CONTENT.context || '';
     paraTotalEl.textContent = String(CONTENT.paragraphs.length);
+    reportParaTotal.textContent = String(CONTENT.paragraphs.length);
   };
 
   const renderParagraph = () => {
@@ -800,7 +860,8 @@
       const span = document.createElement('span');
       span.textContent = tok;
       span.className = 'transition-colors duration-200 cursor-pointer select-none';
-      addDblClickAndLongPress(span, () => tok);
+      // In read-along: click opens word help bubble
+      addWordHelpEvents(span, () => tok);
       return { original: tok, norm: normalizeWord(tok), el: span };
     });
 
@@ -812,20 +873,18 @@
 
     paraIdxEl.textContent = String(paragraphIndex + 1);
 
-    // By spec: on paragraph change, reset buffer
+    // On paragraph change, reset buffer (spec)
     clearRecognitionBufferUI();
 
     prevBtn.disabled = paragraphIndex === 0;
     nextBtn.disabled = paragraphIndex === CONTENT.paragraphs.length - 1;
+
     [prevBtn, nextBtn].forEach(btn => {
       btn.classList.toggle('opacity-50', btn.disabled);
       btn.classList.toggle('cursor-not-allowed', btn.disabled);
     });
 
-    // Keep report dropdown in sync
-    if (reportParaSelect.options.length) reportParaSelect.value = String(paragraphIndex);
-
-    renderParagraphReport();
+    if (!reportTabPanel.classList.contains('hidden')) renderParagraphReport();
   };
 
   const renderHighlights = () => {
@@ -834,6 +893,7 @@
     const combinedCount = Math.min(combinedMatchedCount, targetTokens.length);
 
     let normalizedIndex = 0;
+
     for (const w of spanWords) {
       if (!w.norm) {
         w.el.className = 'transition-colors duration-200 text-slate-900 cursor-pointer select-none';
@@ -856,75 +916,39 @@
     }
   };
 
-  const makeChip = (tokenObj, type) => {
+  // ---------------------------
+  // Paragraph report (current paragraph only)
+  // ---------------------------
+  const makeChip = (t, type) => {
     const chip = document.createElement('span');
     chip.className =
       type === 'correct'
         ? 'rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 cursor-pointer select-none'
         : 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 cursor-pointer select-none';
-    chip.textContent = tokenObj.original;
-    addDblClickAndLongPress(chip, () => tokenObj.original);
+    chip.textContent = t.original;
+
+    // Word help on chips too
+    addWordHelpEvents(chip, () => t.original);
+
     return chip;
   };
 
   const renderParagraphReport = () => {
+    validateName();
+
     const tokens = paragraphTokens[paragraphIndex] || [];
     const best = Math.min(progress[paragraphIndex]?.bestFinalCount || 0, tokens.length);
     const pct = tokens.length ? Math.round((best / tokens.length) * 100) : 0;
 
-    paraStatTotal.textContent = String(tokens.length);
-    paraStatCorrect.textContent = String(best);
-    paraStatAccuracy.textContent = `${pct}%`;
-    setDonut(paraAccuracyArc, paraAccuracyText, paraGraphLabel, pct);
+    reportPara.textContent = String(paragraphIndex + 1);
 
-    paraCorrectChips.innerHTML = '';
-    paraIncorrectChips.innerHTML = '';
+    statTotalWords.textContent = String(tokens.length);
+    statCorrectWords.textContent = String(best);
+    statAccuracy.textContent = `${pct}%`;
+    setAccuracyGraph(pct);
 
-    const correctTokens = tokens.slice(0, best);
-    const incorrectTokens = tokens.slice(best);
-
-    if (correctTokens.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'text-sm text-slate-400';
-      empty.textContent = '(none yet)';
-      paraCorrectChips.appendChild(empty);
-    } else {
-      correctTokens.forEach(t => paraCorrectChips.appendChild(makeChip(t, 'correct')));
-    }
-
-    if (incorrectTokens.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'text-sm text-slate-400';
-      empty.textContent = '(all words correct!)';
-      paraIncorrectChips.appendChild(empty);
-    } else {
-      incorrectTokens.forEach(t => paraIncorrectChips.appendChild(makeChip(t, 'incorrect')));
-    }
-  };
-
-  const renderOverallReport = () => {
-    validateName();
-
-    const totalWords = paragraphTokens.reduce((sum, arr) => sum + arr.length, 0);
-    const correctWords = paragraphTokens.reduce(
-      (sum, arr, i) => sum + Math.min(progress[i]?.bestFinalCount || 0, arr.length),
-      0
-    );
-    const accuracy = totalWords === 0 ? 0 : Math.round((correctWords / totalWords) * 100);
-
-    statTotalWords.textContent = String(totalWords);
-    statCorrectWords.textContent = String(correctWords);
-    statAccuracy.textContent = `${accuracy}%`;
-    setDonut(accuracyArc, accuracyText, graphLabel, accuracy);
-  };
-
-  const renderReportTabParagraph = (idx) => {
-    const i = Math.max(0, Math.min(idx, CONTENT.paragraphs.length - 1));
-    const tokens = paragraphTokens[i] || [];
-    const best = Math.min(progress[i]?.bestFinalCount || 0, tokens.length);
-
-    reportCorrectChips.innerHTML = '';
-    reportIncorrectChips.innerHTML = '';
+    correctChipsEl.innerHTML = '';
+    incorrectChipsEl.innerHTML = '';
 
     const correctTokens = tokens.slice(0, best);
     const incorrectTokens = tokens.slice(best);
@@ -933,19 +957,144 @@
       const empty = document.createElement('span');
       empty.className = 'text-sm text-slate-400';
       empty.textContent = '(none yet)';
-      reportCorrectChips.appendChild(empty);
+      correctChipsEl.appendChild(empty);
     } else {
-      correctTokens.forEach(t => reportCorrectChips.appendChild(makeChip(t, 'correct')));
+      correctTokens.forEach(t => correctChipsEl.appendChild(makeChip(t, 'correct')));
     }
 
     if (incorrectTokens.length === 0) {
       const empty = document.createElement('span');
       empty.className = 'text-sm text-slate-400';
       empty.textContent = '(all words correct!)';
-      reportIncorrectChips.appendChild(empty);
+      incorrectChipsEl.appendChild(empty);
     } else {
-      incorrectTokens.forEach(t => reportIncorrectChips.appendChild(makeChip(t, 'incorrect')));
+      incorrectTokens.forEach(t => incorrectChipsEl.appendChild(makeChip(t, 'incorrect')));
     }
+  };
+
+  // ---------------------------
+  // Full Text + Highlight (selection-based)
+  // ---------------------------
+  const renderColorPalette = () => {
+    colorPalette.innerHTML = '';
+    HIGHLIGHT_COLORS.forEach((c) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200';
+      btn.innerHTML = `
+        <span class="h-4 w-4 rounded-md ring-1 ring-slate-200" style="background:${c.bg}"></span>
+        <span>${c.name}</span>
+      `;
+      const markSelected = () => {
+        [...colorPalette.children].forEach(x => x.classList.remove('ring-2', 'ring-slate-900'));
+        btn.classList.add('ring-2', 'ring-slate-900');
+      };
+      btn.addEventListener('click', () => {
+        selectedHighlight = c.bg;
+        markSelected();
+      });
+      colorPalette.appendChild(btn);
+      if (c.bg === selectedHighlight) markSelected();
+    });
+  };
+
+  const buildFullTextDOM = () => {
+    fullTextContainer.innerHTML = '';
+
+    // Title line
+    const t = document.createElement('div');
+    t.className = 'mb-4';
+    t.innerHTML = `
+      <div class="text-xl sm:text-2xl font-bold">${escapeHtml(CONTENT.title)}
+        <span class="text-slate-500 font-semibold">by ${escapeHtml(CONTENT.author)}</span>
+      </div>
+      <div class="mt-1 text-sm italic text-slate-600">${escapeHtml(CONTENT.context)}</div>
+    `;
+    fullTextContainer.appendChild(t);
+
+    // Paragraphs
+    CONTENT.paragraphs.forEach((p, idx) => {
+      const block = document.createElement('div');
+      block.className = 'mb-4 last:mb-0';
+
+      const label = document.createElement('div');
+      label.className = 'text-xs font-semibold text-slate-500 mb-1';
+      label.textContent = `Paragraph ${idx + 1}`;
+      block.appendChild(label);
+
+      const para = document.createElement('p');
+      para.className = 'text-lg leading-relaxed text-slate-900';
+
+      // Wrap each word in a span (so click -> bubble).
+      const rawTokens = p.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+      rawTokens.forEach((tok, i) => {
+        const span = document.createElement('span');
+        span.textContent = tok;
+        span.className = 'cursor-pointer select-text';
+        span.dataset.word = tok;
+
+        addWordHelpEvents(span, () => tok);
+
+        para.appendChild(span);
+        if (i < rawTokens.length - 1) para.appendChild(document.createTextNode(' '));
+      });
+
+      block.appendChild(para);
+      fullTextContainer.appendChild(block);
+    });
+  };
+
+  const selectionIsInside = (sel, container) => {
+    if (!sel || sel.rangeCount === 0) return false;
+    const range = sel.getRangeAt(0);
+    return container.contains(range.commonAncestorContainer);
+  };
+
+  const applyHighlightToSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    if (!selectionIsInside(sel, fullTextContainer)) {
+      setStatus('Select text inside Full Text tab', '#f59e0b');
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) {
+      setStatus('Select some text first', '#f59e0b');
+      return;
+    }
+
+    // Wrap selected contents in <mark>
+    const mark = document.createElement('mark');
+    mark.className = 'rounded-md px-0.5';
+    mark.style.background = selectedHighlight;
+    mark.style.color = '#0f172a';
+
+    try {
+      // Try surroundContents (may fail if selection crosses element boundaries)
+      range.surroundContents(mark);
+    } catch (e) {
+      // Fallback: extract and reinsert
+      const frag = range.extractContents();
+      mark.appendChild(frag);
+      range.insertNode(mark);
+    }
+
+    sel.removeAllRanges();
+    setStatus('Highlighted', '#94a3b8');
+  };
+
+  const clearAllHighlights = () => {
+    // Remove <mark> by unwrapping
+    const marks = fullTextContainer.querySelectorAll('mark');
+    marks.forEach((m) => {
+      const parent = m.parentNode;
+      while (m.firstChild) parent.insertBefore(m.firstChild, m);
+      parent.removeChild(m);
+      parent.normalize();
+    });
+    setStatus('Highlights cleared', '#94a3b8');
   };
 
   // ---------------------------
@@ -970,7 +1119,6 @@
       listening = false;
       micBtn.textContent = 'Start Reading';
       setStatus('Paused', '#94a3b8');
-      // no buffer reset here (true pause)
     };
 
     recognition.onerror = (e) => {
@@ -986,7 +1134,6 @@
     recognition.onresult = (event) => {
       let newInterim = '';
 
-      // Accumulate only NEW final pieces using event.resultIndex
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const res = event.results[i];
         const text = res[0].transcript;
@@ -1011,11 +1158,9 @@
       }
 
       renderHighlights();
-      renderParagraphReport();
 
       if (!reportTabPanel.classList.contains('hidden')) {
-        renderOverallReport();
-        renderReportTabParagraph(reportParaSelect.value ? Number(reportParaSelect.value) : paragraphIndex);
+        renderParagraphReport();
       }
     };
   };
@@ -1031,15 +1176,27 @@
     try { recognition.stop(); } catch (_) {}
   };
 
-  const hardResetRecognition = (keepListening) => {
+  const resetEngineKeepBuffers = (resume) => {
     if (!isSupported) return;
-    const shouldResume = !!keepListening;
+    const shouldResume = !!resume;
 
     try { recognition && recognition.abort(); } catch (_) {}
     recognition = null;
     initRecognition();
 
-    // Used only when we WANT to clear: paragraph change/restart/clear transcript
+    setTranscript(accumulatedFinalText, interimText);
+    renderHighlights();
+
+    if (shouldResume) setTimeout(() => startListening(), 120);
+  };
+
+  const hardResetForParagraphChange = (resume) => {
+    const shouldResume = !!resume;
+
+    try { recognition && recognition.abort(); } catch (_) {}
+    recognition = null;
+    initRecognition();
+
     clearRecognitionBufferUI();
 
     if (shouldResume) setTimeout(() => startListening(), 120);
@@ -1058,18 +1215,25 @@
     paragraphIndex = clamped;
     renderParagraph();
 
-    hardResetRecognition(wasListening);
+    hardResetForParagraphChange(wasListening);
   };
 
   const restartParagraph = () => {
     const wasListening = listening;
     if (wasListening) stopListening();
-    hardResetRecognition(wasListening);
+
+    hardResetForParagraphChange(wasListening);
   };
 
   // ---------------------------
-  // Download short evidence (current paragraph only)
+  // Screenshot Download (current paragraph report)
   // ---------------------------
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const makeTimestamp = () => {
+    const d = new Date();
+    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  };
+
   const downloadDataUrl = (dataUrl, filename) => {
     const a = document.createElement('a');
     a.href = dataUrl;
@@ -1079,20 +1243,19 @@
     a.remove();
   };
 
-  const captureCurrentParagraphEvidence = async () => {
+  const captureReportAndDownload = async () => {
     if (!requireNameOrFocus()) return;
 
-    // Ensure report reflects latest state
     renderParagraphReport();
 
-    const format = (downloadParaFormat.value || 'png').toLowerCase();
+    const format = (downloadFormat.value || 'png').toLowerCase();
     const isJpg = format === 'jpg' || format === 'jpeg';
 
     try {
-      downloadParaHint.textContent = 'Creating image…';
+      downloadHint.textContent = 'Creating image…';
 
-      const canvas = await html2canvas(readCapture, {
-        backgroundColor: '#ffffff',
+      const canvas = await html2canvas(reportCapture, {
+        backgroundColor: '#f8fafc',
         scale: 2,
         useCORS: true
       });
@@ -1109,12 +1272,12 @@
         downloadDataUrl(dataUrl, `read-along_${who}_${p}_${stamp}.png`);
       }
 
-      downloadParaHint.textContent = 'Downloaded.';
-      setTimeout(() => (downloadParaHint.textContent = ''), 2000);
+      downloadHint.textContent = 'Downloaded.';
+      setTimeout(() => (downloadHint.textContent = ''), 2000);
     } catch (err) {
       console.error(err);
-      downloadParaHint.textContent = 'Could not create image (try Chrome/Edge).';
-      setTimeout(() => (downloadParaHint.textContent = ''), 4000);
+      downloadHint.textContent = 'Could not create image (try Chrome/Edge).';
+      setTimeout(() => (downloadHint.textContent = ''), 4000);
     }
   };
 
@@ -1125,20 +1288,17 @@
     validateName();
     if (studentNameInput.value.trim().length > 0) setStatus('Paused', '#94a3b8');
   });
+
   studentNameInput.addEventListener('blur', validateName);
 
   micBtn.addEventListener('click', () => {
     if (!isSupported) return;
     if (!requireNameOrFocus()) return;
+
     if (!recognition) initRecognition();
 
-    if (!listening) {
-      // Resume without resetting
-      startListening();
-    } else {
-      // Pause (no reset)
-      stopListening();
-    }
+    if (!listening) startListening();
+    else stopListening();
   });
 
   prevBtn.addEventListener('click', () => goToParagraph(paragraphIndex - 1));
@@ -1149,13 +1309,9 @@
     const wasListening = listening;
     if (wasListening) stopListening();
 
-    // Explicit clear: wipe buffers, keep paragraph
     clearRecognitionBufferUI();
+    resetEngineKeepBuffers(false);
 
-    // Re-init engine, resume if needed
-    try { recognition && recognition.abort(); } catch (_) {}
-    recognition = null;
-    initRecognition();
     if (wasListening) setTimeout(() => startListening(), 120);
   });
 
@@ -1165,28 +1321,56 @@
     const wasListening = listening;
     if (wasListening) stopListening();
 
-    // Change language WITHOUT wiping progress
-    try { recognition && recognition.abort(); } catch (_) {}
-    recognition = null;
-    initRecognition();
-
-    setTranscript(accumulatedFinalText, interimText);
-    renderHighlights();
-    renderParagraphReport();
-
+    resetEngineKeepBuffers(false);
     if (wasListening) setTimeout(() => startListening(), 120);
 
     if (!pronounceBubble.classList.contains('hidden') && currentPronounceWord) {
-      pbLang.textContent = `Voice: ${langSelect.value || 'en-US'} (uses your device/browser voices)`;
+      pbLang.textContent = `Pronunciation voice: ${langSelect.value || 'en-US'} (device/browser voices)`;
     }
   });
 
   tabReadBtn.addEventListener('click', () => setActiveTab('read'));
   tabReportBtn.addEventListener('click', () => setActiveTab('report'));
+  tabTextBtn.addEventListener('click', () => setActiveTab('text'));
 
-  reportParaSelect.addEventListener('change', () => {
-    const idx = Number(reportParaSelect.value);
-    renderReportTabParagraph(idx);
+  refreshReportBtn.addEventListener('click', renderParagraphReport);
+
+  resetThisParaBtn.addEventListener('click', () => {
+    progress[paragraphIndex].bestFinalCount = 0;
+    progress[paragraphIndex].bestCombinedCount = 0;
+    renderParagraphReport();
+    setStatus('Paragraph result reset', '#94a3b8');
   });
 
-  clearReportBtn.addEventListener('click', ()
+  downloadReportBtn.addEventListener('click', captureReportAndDownload);
+
+  // Highlighting actions
+  applyHighlightBtn.addEventListener('click', () => applyHighlightToSelection());
+  clearHighlightsBtn.addEventListener('click', () => clearAllHighlights());
+
+  // ---------------------------
+  // Init
+  // ---------------------------
+  if (window.speechSynthesis) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = () => loadVoices();
+  }
+
+  buildTokensAndProgress();
+  renderHeader();
+  renderParagraph();
+  renderColorPalette();
+  buildFullTextDOM();
+  setAccuracyGraph(0);
+
+  setActiveTab('read');
+
+  validateName();
+  if (isSupported) {
+    initRecognition();
+    setStatus('Enter your name to start', '#f59e0b');
+  }
+})();
+</script>
+</body>
+</html>
