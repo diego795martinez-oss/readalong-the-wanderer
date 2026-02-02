@@ -1,1436 +1,872 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Read-Along (EFL) — Web Speech API</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    #pronounceBubble { will-change: transform; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wanderer - Read Along Trainer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2canvas for Screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Custom Config for Tailwind colors if needed, keeping defaults is fine -->
+    <style>
+        /* Custom Scrollbar for the transcript box */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Floating Bubble Animation */
+        .bubble-enter {
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Highlight classes */
+        mark { color: inherit; border-radius: 4px; padding: 2px 0; cursor: pointer; }
+        .hl-yellow { background-color: #fcd34d; }
+        .hl-green { background-color: #86efac; }
+        .hl-blue { background-color: #93c5fd; }
+        .hl-pink { background-color: #f9a8d4; }
+    </style>
 </head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-<body class="min-h-screen bg-slate-50 text-slate-900">
-  <div class="mx-auto max-w-4xl px-4 py-6 sm:py-10">
-    <!-- Header -->
-    <header class="mb-6 sm:mb-8">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 id="title" class="text-2xl sm:text-3xl font-bold tracking-tight">
-            THE WANDERER <span class="text-slate-500 font-semibold">by Sharon Creech</span>
-          </h1>
-          <p id="context" class="mt-2 text-sm sm:text-base italic text-slate-600">
-            The main character, Sophie, is an orphan adopted by uncles. She is sailing across the Atlantic with her cousins.
-          </p>
+    <!-- Top Navigation / Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3">
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight">THE WANDERER <span class="text-sm font-normal text-slate-500 ml-2">by Sharon Creech</span></h1>
+            <p class="text-xs text-slate-500 italic mt-1">The main character, Sophie, is an orphan adopted by uncles. She is sailing across the Atlantic with her cousins.</p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs sm:text-sm shadow-sm ring-1 ring-slate-200">
-            <span class="h-2.5 w-2.5 rounded-full" id="statusDot" style="background:#94a3b8"></span>
-            <span id="statusText" class="text-slate-700">Paused</span>
-          </span>
+        <!-- Tab Navigation -->
+        <div class="flex max-w-4xl mx-auto px-4 mt-2 border-b border-slate-200 overflow-x-auto">
+            <button onclick="app.switchTab('read')" id="tab-btn-read" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap">Tab A: Read Along</button>
+            <button onclick="app.switchTab('report')" id="tab-btn-report" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Tab B: Report</button>
+            <button onclick="app.switchTab('full')" id="tab-btn-full" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Tab C: Full Text & Highlight</button>
         </div>
-      </div>
     </header>
 
-    <!-- Unsupported Browser Warning -->
-    <div id="unsupported" class="hidden mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-      <p class="font-semibold">Browser not supported.</p>
-      <p class="mt-1 text-sm">
-        Please use Google Chrome or Microsoft Edge (desktop or Android). Some iOS versions and Firefox may not support the Web Speech API.
-      </p>
-    </div>
-
-    <!-- Main Card -->
-    <main class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-      <div class="p-4 sm:p-6">
-
-        <!-- Tabs -->
-        <div class="mb-4 grid grid-cols-3 gap-2">
-          <button id="tabRead"
-            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
-            Read Along
-          </button>
-          <button id="tabReport"
-            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
-            Paragraph Report
-          </button>
-          <button id="tabText"
-            class="inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200">
-            Full Text & Highlight
-          </button>
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-4xl mx-auto w-full p-4 relative">
+        
+        <!-- Browser Support Warning -->
+        <div id="browser-warning" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative" role="alert">
+            <strong class="font-bold">Browser not supported.</strong>
+            <span class="block sm:inline">Please use Google Chrome or Microsoft Edge for Speech Recognition features.</span>
         </div>
 
-        <!-- READ TAB -->
-        <div id="readTab" class="flex flex-col gap-3 sm:gap-4">
-          <!-- Student Name (Mandatory) -->
-          <section class="rounded-2xl bg-white p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div class="flex-1">
-                <label for="studentName" class="text-sm font-bold text-slate-900">
-                  Your name <span class="text-rose-600">*</span>
-                </label>
-                <p class="text-xs text-slate-600 mt-1">You must enter your name before you can start reading.</p>
-                <input id="studentName" type="text" inputmode="text" autocomplete="name"
-                  placeholder="Type your full name"
-                  class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200" />
-                <p id="nameError" class="hidden mt-2 text-sm font-semibold text-rose-700">Please enter your name.</p>
-              </div>
-              <div class="sm:pl-4">
-                <div class="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                  This name will appear on the report screenshot.
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div class="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-              <button id="micBtn"
-                class="col-span-2 sm:col-auto inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                Start Reading
-              </button>
-
-              <button id="prevBtn"
-                class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                Previous
-              </button>
-
-              <button id="nextBtn"
-                class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                Next
-              </button>
-
-              <button id="restartBtn"
-                class="col-span-2 sm:col-auto inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                Restart Paragraph
-              </button>
-            </div>
-
-            <div class="flex flex-col gap-2 sm:items-end">
-              <label class="text-sm font-medium text-slate-700" for="langSelect">Recognition Accent</label>
-              <select id="langSelect"
-                class="w-full sm:w-56 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
-                <option value="en-US" selected>English (US) — en-US</option>
-                <option value="en-GB">English (UK) — en-GB</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Paragraph Area -->
-          <section aria-label="Reading paragraph" class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex items-center justify-between gap-3">
-              <p class="text-xs sm:text-sm font-semibold text-slate-600">
-                Paragraph <span id="paraIdx">1</span> / <span id="paraTotal">5</span>
-              </p>
-              <p class="text-xs sm:text-sm text-slate-500" id="hint">
-                Tip: Words turn green as the engine recognizes them. Double-click a word to see pronunciation + definition.
-              </p>
-            </div>
-
-            <div class="mt-4 text-lg sm:text-xl leading-relaxed text-slate-900" id="paragraphDisplay"></div>
-
-            <div class="mt-5">
-              <div class="flex items-center justify-between">
-                <p class="text-xs sm:text-sm font-semibold text-slate-700">Live transcript (what the computer hears)</p>
-                <button id="clearTranscript" class="text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900">
-                  Clear
-                </button>
-              </div>
-
-              <div class="mt-2 rounded-xl bg-white p-3 sm:p-4 text-sm sm:text-base text-slate-700 shadow-sm ring-1 ring-slate-200" id="transcriptBox">
-                <span class="text-slate-400">(interim results will appear here)</span>
-              </div>
-            </div>
-          </section>
-
-          <footer class="pt-1 pb-2">
-            <p class="text-xs text-slate-500">
-              Privacy: Audio is processed locally by your browser using the Web Speech API. Pronunciation playback uses on-device Speech Synthesis. Definitions use a free dictionary endpoint and send only the selected word.
-            </p>
-          </footer>
+        <!-- Auto-save Indicator -->
+        <div id="autosave-indicator" class="fixed bottom-4 right-4 bg-slate-800 text-white text-xs px-3 py-1 rounded-full opacity-0 transition-opacity duration-500 pointer-events-none z-50">
+            Saved
         </div>
 
-        <!-- PARAGRAPH REPORT TAB -->
-        <div id="reportTabPanel" class="hidden">
-          <div id="reportCapture" class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 class="text-lg sm:text-xl font-bold">Paragraph Report</h2>
-                <p class="text-sm text-slate-600">
-                  Student: <span id="reportStudent" class="font-semibold text-slate-900">—</span>
-                  <span class="mx-2 text-slate-300">•</span>
-                  Paragraph: <span id="reportPara" class="font-semibold text-slate-900">1</span> / <span id="reportParaTotal" class="font-semibold text-slate-900">5</span>
-                </p>
-                <p class="text-sm text-slate-600 mt-1">
-                  This report only shows the <span class="font-semibold">current paragraph</span> (shorter screenshot).
-                </p>
-              </div>
+        <!-- TAB A: READ ALONG -->
+        <section id="tab-read" class="space-y-6">
+            <!-- Controls & Status Header -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <!-- Name Input -->
+                    <div class="w-full md:w-auto">
+                        <label for="student-name" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your Name *</label>
+                        <input type="text" id="student-name" placeholder="Enter name to start..." class="w-full md:w-64 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors">
+                    </div>
 
-              <div class="grid grid-cols-2 sm:flex gap-2">
-                <button id="refreshReport"
-                  class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                  Refresh
-                </button>
-                <button id="resetThisPara"
-                  class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                  Reset Paragraph Result
-                </button>
-              </div>
+                    <!-- Status Pill -->
+                    <div id="status-pill" class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Waiting for Name
+                    </div>
+                </div>
+
+                <!-- Main Controls -->
+                <div class="grid grid-cols-2 md:flex gap-2">
+                    <button id="btn-start" disabled onclick="app.startReading()" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                        Start Reading
+                    </button>
+                    
+                    <button id="btn-stop" disabled onclick="app.stopReading()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">Pause</button>
+                    <button onclick="app.restartParagraph()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors">Restart ¶</button>
+                    
+                    <div class="hidden md:block border-l border-slate-300 mx-2"></div>
+
+                    <button onclick="app.changeParagraph(-1)" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium">Prev</button>
+                    <button onclick="app.changeParagraph(1)" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium">Next</button>
+
+                    <div class="ml-auto">
+                        <select id="accent-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5">
+                            <option value="en-US">US English</option>
+                            <option value="en-GB">UK English</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-5">
-              <div class="sm:col-span-3 grid gap-3 sm:grid-cols-3">
-                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Words (this paragraph)</p>
-                  <p id="statTotalWords" class="mt-1 text-2xl font-bold">0</p>
+            <!-- Reading Area -->
+            <div class="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-slate-100 min-h-[300px] relative">
+                <div class="absolute top-4 right-4 text-xs font-bold text-slate-300 select-none">PARAGRAPH <span id="display-para-num">1</span></div>
+                
+                <!-- The Text Container -->
+                <div id="read-display" class="text-2xl md:text-3xl leading-relaxed text-slate-400 font-serif select-none" ondblclick="app.handleBubbleClick(event)">
+                    <!-- Words injected here -->
                 </div>
-                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Correct words</p>
-                  <p id="statCorrectWords" class="mt-1 text-2xl font-bold">0</p>
-                </div>
-                <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <p class="text-xs font-semibold text-slate-600">Accuracy</p>
-                  <p id="statAccuracy" class="mt-1 text-2xl font-bold">0%</p>
-                </div>
-              </div>
-
-              <div class="sm:col-span-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-xs font-semibold text-slate-600">Accuracy graph</p>
-                    <p class="text-sm text-slate-600">This paragraph</p>
-                  </div>
-                  <span id="graphLabel" class="text-xs font-semibold text-slate-500">0%</span>
-                </div>
-
-                <div class="mt-3 flex items-center justify-center">
-                  <svg width="140" height="140" viewBox="0 0 120 120" class="select-none">
-                    <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="12" />
-                    <circle id="accuracyArc" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="12"
-                      stroke-linecap="round" stroke-dasharray="0 999" transform="rotate(-90 60 60)" />
-                    <text id="accuracyText" x="60" y="64" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">0%</text>
-                  </svg>
-                </div>
-              </div>
             </div>
 
-            <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p class="text-sm font-bold">Download this paragraph report</p>
-                  <p class="text-xs text-slate-600">Saves a screenshot of this paragraph report only (PNG/JPG).</p>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <div class="flex-1 sm:flex-none">
-                    <label class="text-xs font-semibold text-slate-600" for="downloadFormat">Format</label>
-                    <select id="downloadFormat"
-                      class="mt-1 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-200">
-                      <option value="png" selected>PNG</option>
-                      <option value="jpg">JPG</option>
-                    </select>
-                  </div>
+            <!-- Live Transcript -->
+            <div class="bg-slate-900 text-emerald-400 p-4 rounded-lg font-mono text-sm h-24 overflow-y-auto shadow-inner border border-slate-700">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">Live Transcript</div>
+                <div id="transcript-box" class="opacity-90">...</div>
+            </div>
+        </section>
 
-                  <button id="downloadReport"
-                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                    Download Screenshot
-                  </button>
+
+        <!-- TAB B: REPORT -->
+        <section id="tab-report" class="hidden space-y-6">
+            <div id="report-card" class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-2xl mx-auto">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Performance Report</h2>
+                        <p class="text-slate-500 text-sm">Paragraph <span id="report-para-num">1</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p id="report-student-name" class="font-bold text-indigo-600 text-lg"></p>
+                        <p class="text-xs text-slate-400" id="report-date"></p>
+                    </div>
                 </div>
-              </div>
-              <p id="downloadHint" class="mt-2 text-xs text-slate-500"></p>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="text-center p-4 bg-slate-50 rounded-xl">
+                        <div class="text-xs text-slate-500 uppercase font-bold">Total Words</div>
+                        <div id="stat-total" class="text-3xl font-bold text-slate-700">0</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-xl">
+                        <div class="text-xs text-green-600 uppercase font-bold">Correct</div>
+                        <div id="stat-correct" class="text-3xl font-bold text-green-600">0</div>
+                    </div>
+                    <div class="text-center p-4 bg-indigo-50 rounded-xl">
+                        <div class="text-xs text-indigo-600 uppercase font-bold">Accuracy</div>
+                        <div id="stat-accuracy" class="text-3xl font-bold text-indigo-600">0%</div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Visual -->
+                <div class="mb-8">
+                    <div class="h-4 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div id="accuracy-bar" class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Word Breakdown -->
+                <h3 class="text-sm font-bold text-slate-700 mb-3">Word Breakdown (Double-click words for help)</h3>
+                <div id="report-words" class="flex flex-wrap gap-2" ondblclick="app.handleBubbleClick(event)">
+                    <!-- Word Chips -->
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                    <button onclick="app.downloadReport()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-medium shadow-lg transition-transform active:scale-95">
+                        Download Report Image
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- TAB C: FULL TEXT & HIGHLIGHT -->
+        <section id="tab-full" class="hidden grid md:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+            
+            <!-- Left: Highlights Panel -->
+            <div class="md:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-700">Highlighted Fragments</h3>
+                </div>
+                
+                <div id="fragments-container" class="p-4 overflow-y-auto flex-grow space-y-4">
+                    <!-- Dynamic Fragment Groups -->
+                    <p class="text-sm text-slate-400 italic text-center mt-10">(No highlights yet)</p>
+                </div>
             </div>
 
-            <div class="mt-4 rounded-2xl bg-white p-4 sm:p-5 shadow-sm ring-1 ring-slate-200">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p class="text-sm font-bold">Words breakdown</p>
-                  <p class="text-xs text-slate-600">
-                    Correct (green) and not yet correct (red). Double-click a word for pronunciation + definition.
-                  </p>
-                </div>
-                <div class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                  <span>Based on best progress so far</span>
-                </div>
-              </div>
+            <!-- Right: Text & Tools -->
+            <div class="md:col-span-2 flex flex-col gap-4 h-full">
+                <!-- Toolbar -->
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-2 items-center justify-between">
+                    <div class="flex gap-2 items-center">
+                        <span class="text-xs font-bold text-slate-400 mr-2">COLOR:</span>
+                        <!-- Color Palette -->
+                        <button onclick="app.setHighlightColor('hl-yellow')" class="w-8 h-8 rounded-full bg-yellow-300 hover:scale-110 transition-transform ring-2 ring-offset-1 ring-transparent focus:ring-slate-400" data-color="hl-yellow"></button>
+                        <button onclick="app.setHighlightColor('hl-green')" class="w-8 h-8 rounded-full bg-green-300 hover:scale-110 transition-transform ring-2 ring-offset-1 ring-transparent focus:ring-slate-400" data-color="hl-green"></button>
+                        <button onclick="app.setHighlightColor('hl-blue')" class="w-8 h-8 rounded-full bg-blue-300 hover:scale-110 transition-transform ring-2 ring-offset-1 ring-transparent focus:ring-slate-400" data-color="hl-blue"></button>
+                        <button onclick="app.setHighlightColor('hl-pink')" class="w-8 h-8 rounded-full bg-pink-300 hover:scale-110 transition-transform ring-2 ring-offset-1 ring-transparent focus:ring-slate-400" data-color="hl-pink"></button>
+                    </div>
 
-              <div class="mt-4">
-                <p class="text-xs font-semibold text-slate-600">Correct</p>
-                <div id="correctChips" class="mt-2 flex flex-wrap gap-2"></div>
-              </div>
+                    <div class="flex gap-2">
+                        <button onclick="app.applyHighlight()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded text-sm font-bold flex items-center gap-1">
+                            <span class="text-lg">✎</span> Highlight
+                        </button>
+                        <button onclick="app.clearHighlights()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded text-sm font-bold">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
 
-              <div class="mt-4">
-                <p class="text-xs font-semibold text-slate-600">Not yet correct</p>
-                <div id="incorrectChips" class="mt-2 flex flex-wrap gap-2"></div>
-              </div>
+                <!-- Full Text Scrollable -->
+                <div id="full-text-container" class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 overflow-y-auto flex-grow font-serif text-lg leading-relaxed text-slate-800" ondblclick="app.handleBubbleClick(event)">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- FLOATING BUBBLE (Shared) -->
+        <div id="helper-bubble" class="hidden fixed z-50 bg-slate-900 text-white p-4 rounded-xl shadow-2xl max-w-xs w-64 bubble-enter">
+            <div class="flex justify-between items-start mb-2">
+                <h4 id="bubble-word" class="text-xl font-bold text-white capitalize">Word</h4>
+                <button onclick="app.closeBubble()" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            
+            <div class="flex gap-2 mb-3">
+                <button onclick="app.speakWord(1)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded text-xs font-bold">Play</button>
+                <button onclick="app.speakWord(0.5)" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-xs font-bold">Slow</button>
+                <button onclick="app.speakWord(1, 2)" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-xs font-bold">x2</button>
             </div>
 
-            <p class="mt-4 text-xs text-slate-500">
-              Note: Matching is tolerant and sequential (expects in-order). If a student skips a word, later words may show as “not yet correct.”
-            </p>
-          </div>
+            <div id="bubble-def" class="text-xs text-slate-300 border-t border-slate-700 pt-2">
+                <!-- Content dynamically filled -->
+            </div>
         </div>
 
-        <!-- FULL TEXT + HIGHLIGHT TAB -->
-        <div id="textTabPanel" class="hidden">
-          <section class="rounded-2xl bg-slate-50 p-4 sm:p-6 ring-1 ring-slate-200">
-            <div class="flex flex-col gap-1">
-              <h2 class="text-lg sm:text-xl font-bold">Full Text & Highlight</h2>
-              <p class="mt-1 text-sm text-slate-600">
-                Select words/sentences, then press <span class="font-semibold">Highlight</span>.
-                Double-click a word for pronunciation + definition.
-              </p>
-            </div>
-
-            <!-- ✅ Toolbar that fits inside width (wraps, no overflow) -->
-            <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div class="flex flex-col gap-3">
-                <div class="min-w-0">
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-semibold text-slate-600">Highlight color</p>
-                    <p class="text-xs text-slate-500">Selected color is used for the next highlight.</p>
-                  </div>
-                  <div class="mt-2 flex flex-wrap gap-2" id="colorPalette"></div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 justify-start sm:justify-end">
-                  <button id="applyHighlight"
-                    class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                    Highlight
-                  </button>
-                  <button id="clearHighlights"
-                    class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-base font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-                    Clear highlights
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- ✅ New: Highlighted fragments box (columns by color) -->
-            <div class="mt-4 rounded-2xl bg-white p-4 sm:p-5 shadow-sm ring-1 ring-slate-200">
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p class="text-sm font-bold">Your highlighted fragments</p>
-                  <p class="text-xs text-slate-600">Every time you highlight, the selected text is saved here under that color.</p>
-                </div>
-                <div class="text-xs text-slate-500">Tip: Click a fragment to scroll to it.</div>
-              </div>
-
-              <div id="fragmentsGrid" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
-            </div>
-
-            <div id="fullTextContainer" class="mt-4 rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-slate-200"></div>
-          </section>
-
-          <p class="mt-3 text-xs text-slate-500">
-            Definitions are fetched from a public dictionary endpoint. Only the selected word is sent to retrieve the meaning.
-          </p>
-        </div>
-
-      </div>
     </main>
-  </div>
-
-  <!-- Pronunciation + Definition Bubble -->
-  <div id="pronounceBubble" class="hidden fixed z-50 max-w-[92vw] sm:max-w-md">
-    <div class="rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 p-4">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <p class="text-xs font-semibold text-slate-500">Word help</p>
-          <p id="pbWord" class="mt-1 text-xl font-bold text-slate-900 break-words"></p>
-          <p id="pbLang" class="mt-1 text-xs text-slate-500"></p>
-        </div>
-        <button id="pbClose" class="shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
-          Close
-        </button>
-      </div>
-
-      <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button id="pbPlay"
-          class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-          Play
-        </button>
-        <button id="pbSlow"
-          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-          Slow
-        </button>
-        <button id="pbRepeat"
-          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-          Repeat ×2
-        </button>
-        <button id="pbStop"
-          class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-slate-200">
-          Stop
-        </button>
-      </div>
-
-      <div class="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-        <p class="text-xs font-semibold text-slate-600">Definition</p>
-        <div id="pbDef" class="mt-2 text-sm text-slate-700">
-          <span class="text-slate-400">Double-click a word to load its definition.</span>
-        </div>
-      </div>
-
-      <p class="mt-3 text-xs text-slate-500">
-        Tip: Listen, repeat, then try reading it again.
-      </p>
-    </div>
-  </div>
-
-  <!-- html2canvas for DOM -> image capture (client-side only) -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-<script>
-(() => {
-  // ---------------------------
-  // Fixed Content
-  // ---------------------------
-  const CONTENT = {
-    title: 'THE WANDERER',
-    author: 'Sharon Creech',
-    context: 'The main character, Sophie, is an orphan adopted by uncles. She is sailing across the Atlantic with her cousins.',
-    paragraphs: [
-      "I am not always such a dreamy girl, listening to the sea calling me. My father calls me Three-sided Sophie: one side is dreamy and romantic; one is logical and down-to-earth; and the third side is hardheaded and impulsive. He says I am either in dreamland or earthland or mule-land, and if I ever get the three together, I'll be all set, though I wonder where I will be then. If I'm not in dreamland or earthland or mule-land, where will I be?",
-      "My father says my logical side is most like him, and the dreamy side most like my mother, which isn't entirely fair, I don't think. My father likes to think of himself as a logical man, but he is the one who pores over pictures of exotic lands and says things like \"We should go on a safari!\" and \"We should zip through the air in a hot-air balloon!\"",
-      "And although my mother is a weaver and spins silky cloths and wears flowing dresses, she is the one who gives me sailing textbooks and makes me study water safety and weather prediction and says things like \"Yes, Sophie, I taught you to sail, but that doesn't mean I like the idea of you being out there alone on the water. I want you to stay home. Here. With me. Safe.\"",
-      "My father says he doesn't know who my hardheaded mule side resembles. He says mules don't run in the family. I am thirteen, and I am going to sail across the ocean. Although I would like to go alone-alone! alone! flying over the water!-I'm not.",
-      "My mule-self begged a place aboard a forty-five-foot sailboat with a motley crew: three uncles and two cousins. The uncles-Stew, Mo, and Dock-are my mother's brothers, and she told them, \"If the slightest harm comes to my Sophie, I'll string you all up by your toes.\""
-    ]
-  };
-
-  // ---------------------------
-  // DOM
-  // ---------------------------
-  const $ = (id) => document.getElementById(id);
-
-  const titleEl = $('title');
-  const contextEl = $('context');
-  const paragraphDisplay = $('paragraphDisplay');
-  const transcriptBox = $('transcriptBox');
-
-  const studentNameInput = $('studentName');
-  const nameError = $('nameError');
-  const reportStudent = $('reportStudent');
-  const reportPara = $('reportPara');
-  const reportParaTotal = $('reportParaTotal');
-
-  const micBtn = $('micBtn');
-  const prevBtn = $('prevBtn');
-  const nextBtn = $('nextBtn');
-  const restartBtn = $('restartBtn');
-  const clearTranscriptBtn = $('clearTranscript');
-  const langSelect = $('langSelect');
-
-  const statusText = $('statusText');
-  const statusDot = $('statusDot');
-  const unsupported = $('unsupported');
-
-  const paraIdxEl = $('paraIdx');
-  const paraTotalEl = $('paraTotal');
-
-  // Tabs + report
-  const tabReadBtn = $('tabRead');
-  const tabReportBtn = $('tabReport');
-  const tabTextBtn = $('tabText');
-  const readTab = $('readTab');
-  const reportTabPanel = $('reportTabPanel');
-  const textTabPanel = $('textTabPanel');
-
-  const refreshReportBtn = $('refreshReport');
-  const resetThisParaBtn = $('resetThisPara');
-  const statTotalWords = $('statTotalWords');
-  const statCorrectWords = $('statCorrectWords');
-  const statAccuracy = $('statAccuracy');
-
-  const correctChipsEl = $('correctChips');
-  const incorrectChipsEl = $('incorrectChips');
-
-  // Graph elements
-  const graphLabel = $('graphLabel');
-  const accuracyArc = $('accuracyArc');
-  const accuracyText = $('accuracyText');
-
-  // Download
-  const reportCapture = $('reportCapture');
-  const downloadReportBtn = $('downloadReport');
-  const downloadFormat = $('downloadFormat');
-  const downloadHint = $('downloadHint');
-
-  // Full text highlight
-  const fullTextContainer = $('fullTextContainer');
-  const colorPalette = $('colorPalette');
-  const applyHighlightBtn = $('applyHighlight');
-  const clearHighlightsBtn = $('clearHighlights');
-  const fragmentsGrid = $('fragmentsGrid');
-
-  // Pronunciation + definition bubble
-  const pronounceBubble = $('pronounceBubble');
-  const pbWord = $('pbWord');
-  const pbLang = $('pbLang');
-  const pbClose = $('pbClose');
-  const pbPlay = $('pbPlay');
-  const pbSlow = $('pbSlow');
-  const pbRepeat = $('pbRepeat');
-  const pbStop = $('pbStop');
-  const pbDef = $('pbDef');
-
-  // ---------------------------
-  // Web Speech Support
-  // ---------------------------
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const isSupported = !!SpeechRecognition;
-
-  if (!isSupported) {
-    unsupported.classList.remove('hidden');
-    [
-      studentNameInput, micBtn, prevBtn, nextBtn, restartBtn, langSelect, clearTranscriptBtn,
-      tabReadBtn, tabReportBtn, tabTextBtn,
-      refreshReportBtn, resetThisParaBtn,
-      downloadReportBtn, downloadFormat,
-      applyHighlightBtn, clearHighlightsBtn
-    ].forEach(el => {
-      el.disabled = true;
-      el.classList.add('opacity-50', 'cursor-not-allowed');
-    });
-  }
-
-  // ---------------------------
-  // State
-  // ---------------------------
-  let studentName = '';
-  let paragraphIndex = 0;
-  let listening = false;
-
-  let spanWords = []; // current paragraph word spans
-
-  // Accumulate across stop/resume (pause)
-  let accumulatedFinalText = '';
-  let interimText = '';
-  let finalMatchedCount = 0;
-  let combinedMatchedCount = 0;
-
-  let progress = [];        // per paragraph best
-  let paragraphTokens = []; // token cache for report
-
-  let recognition = null;
-
-  // Speech synthesis
-  let voices = [];
-  let currentPronounceWord = '';
-
-  // Highlighting
-  const HIGHLIGHT_COLORS = [
-    { key: 'yellow', name: 'Yellow', bg: '#FEF08A' },
-    { key: 'green',  name: 'Green',  bg: '#BBF7D0' },
-    { key: 'blue',   name: 'Blue',   bg: '#BFDBFE' },
-    { key: 'pink',   name: 'Pink',   bg: '#FBCFE8' },
-    { key: 'purple', name: 'Purple', bg: '#DDD6FE' },
-    { key: 'orange', name: 'Orange', bg: '#FED7AA' },
-  ];
-  let selectedHighlight = HIGHLIGHT_COLORS[0];
-
-  // ✅ Saved fragments grouped by color
-  // fragmentsByColor[colorKey] = [{ id, text, markEl }]
-  const fragmentsByColor = Object.fromEntries(HIGHLIGHT_COLORS.map(c => [c.key, []]));
-  let fragmentIdSeq = 1;
-
-  // ---------------------------
-  // Helpers
-  // ---------------------------
-  const normalizeWord = (w) => (w || '')
-    .toLowerCase()
-    .replace(/['’]/g, '')
-    .replace(/[^a-z0-9]+/g, '')
-    .trim();
-
-  const cleanWordForPlayback = (w) => {
-    const s = (w || '').trim();
-    const stripped = s.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '');
-    return stripped || s;
-  };
-
-  const tokenize = (text) => (text || '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(' ')
-    .map(normalizeWord)
-    .filter(Boolean);
-
-  const computeMatchedCount = (heardTokens, targetTokens) => {
-    let i = 0;
-    for (const t of heardTokens) {
-      if (i >= targetTokens.length) break;
-      if (!t) continue;
-      if (t === targetTokens[i]) i++;
-    }
-    return i;
-  };
-
-  const setStatus = (label, dotColor) => {
-    statusText.textContent = label;
-    statusDot.style.background = dotColor;
-  };
-
-  const setTranscript = (finalText, interimText) => {
-    const f = (finalText || '').trim();
-    const it = (interimText || '').trim();
-
-    if (!f && !it) {
-      transcriptBox.innerHTML = '<span class="text-slate-400">(interim results will appear here)</span>';
-      return;
-    }
-
-    transcriptBox.innerHTML = '';
-    if (f) {
-      const fSpan = document.createElement('span');
-      fSpan.textContent = f;
-      transcriptBox.appendChild(fSpan);
-    }
-    if (it) {
-      if (f) transcriptBox.appendChild(document.createTextNode(' '));
-      const iSpan = document.createElement('span');
-      iSpan.textContent = it;
-      iSpan.className = 'italic text-slate-500';
-      transcriptBox.appendChild(iSpan);
-    }
-  };
-
-  const clearRecognitionBufferUI = () => {
-    accumulatedFinalText = '';
-    interimText = '';
-    finalMatchedCount = 0;
-    combinedMatchedCount = 0;
-    setTranscript('', '');
-    renderHighlights();
-  };
-
-  const buildTokensAndProgress = () => {
-    paragraphTokens = CONTENT.paragraphs.map(p => {
-      const raw = (p || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-      return raw.map(tok => ({ original: tok, norm: normalizeWord(tok) })).filter(t => t.norm);
-    });
-    progress = CONTENT.paragraphs.map(() => ({ bestFinalCount: 0, bestCombinedCount: 0 }));
-  };
-
-  const setAccuracyGraph = (accuracyPct) => {
-    const pct = Math.max(0, Math.min(100, Math.round(accuracyPct)));
-    const r = 46;
-    const c = 2 * Math.PI * r;
-    const dash = (pct / 100) * c;
-
-    accuracyArc.setAttribute('stroke-dasharray', `${dash} ${Math.max(0, c - dash)}`);
-    accuracyText.textContent = `${pct}%`;
-    graphLabel.textContent = `${pct}%`;
-  };
-
-  const sanitizeFilenamePart = (s) => (s || 'student')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_\-]/g, '')
-    .slice(0, 40) || 'student';
-
-  const escapeHtml = (s) => (s || '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-
-  const clampSnippet = (s, max = 130) => {
-    const t = (s || '').replace(/\s+/g, ' ').trim();
-    if (t.length <= max) return t;
-    return t.slice(0, max - 1) + '…';
-  };
-
-  // ---------------------------
-  // Mandatory name logic
-  // ---------------------------
-  const validateName = () => {
-    studentName = (studentNameInput.value || '').trim();
-    const ok = studentName.length > 0;
-
-    nameError.classList.toggle('hidden', ok);
-    studentNameInput.classList.toggle('border-rose-300', !ok);
-    studentNameInput.classList.toggle('ring-rose-200', !ok);
-
-    if (isSupported) {
-      micBtn.disabled = !ok;
-      micBtn.classList.toggle('opacity-50', !ok);
-      micBtn.classList.toggle('cursor-not-allowed', !ok);
-    }
-
-    reportStudent.textContent = ok ? studentName : '—';
-    return ok;
-  };
-
-  const requireNameOrFocus = () => {
-    const ok = validateName();
-    if (!ok) {
-      setStatus('Please enter your name', '#ef4444');
-      studentNameInput.focus();
-      studentNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    return ok;
-  };
-
-  // ---------------------------
-  // Speech synthesis + bubble + definition (dblclick only)
-  // ---------------------------
-  const loadVoices = () => {
-    voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-  };
-
-  const pickVoiceForLang = (lang) => {
-    if (!voices || voices.length === 0) return null;
-    const exact = voices.find(v => (v.lang || '').toLowerCase() === (lang || '').toLowerCase());
-    if (exact) return exact;
-    const prefix = voices.find(v => (v.lang || '').toLowerCase().startsWith((lang || '').toLowerCase().slice(0,2)));
-    if (prefix) return prefix;
-    const english = voices.find(v => (v.lang || '').toLowerCase().startsWith('en'));
-    return english || null;
-  };
-
-  const speakWord = (word, rate = 1) => {
-    if (!window.speechSynthesis) return;
-    const w = cleanWordForPlayback(word);
-    if (!w) return;
-
-    window.speechSynthesis.cancel();
-
-    const utter = new SpeechSynthesisUtterance(w);
-    const lang = langSelect.value || 'en-US';
-    utter.lang = lang;
-    utter.rate = rate;
-
-    const voice = pickVoiceForLang(lang);
-    if (voice) utter.voice = voice;
-
-    window.speechSynthesis.speak(utter);
-  };
-
-  const stopSpeech = () => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-  };
-
-  const positionBubbleNearElement = (el) => {
-    const rect = el.getBoundingClientRect();
-    const bubbleRect = pronounceBubble.getBoundingClientRect();
-
-    const margin = 10;
-    let top = rect.bottom + margin;
-    let left = rect.left;
-
-    const maxLeft = window.innerWidth - bubbleRect.width - margin;
-    left = Math.max(margin, Math.min(left, maxLeft));
-
-    if (top + bubbleRect.height + margin > window.innerHeight) {
-      top = rect.top - bubbleRect.height - margin;
-      if (top < margin) top = margin;
-    }
-
-    pronounceBubble.style.top = `${Math.round(top)}px`;
-    pronounceBubble.style.left = `${Math.round(left)}px`;
-  };
-
-  const fetchDefinition = async (word) => {
-    const w = normalizeWord(word);
-    if (!w) return;
-
-    pbDef.innerHTML = `<span class="text-slate-400">Loading definition…</span>`;
-
-    try {
-      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`);
-      if (!res.ok) throw new Error('not ok');
-      const data = await res.json();
-
-      const entry = Array.isArray(data) ? data[0] : null;
-      const meanings = entry?.meanings || [];
-      const defs = [];
-
-      for (const m of meanings.slice(0, 2)) {
-        const part = m.partOfSpeech || '';
-        const d = m.definitions?.[0]?.definition || '';
-        if (d) defs.push({ part, d });
-      }
-
-      if (defs.length === 0) {
-        pbDef.innerHTML = `<span class="text-slate-500">No definition found.</span>`;
-        return;
-      }
-
-      pbDef.innerHTML = defs.map(x => `
-        <div class="mb-2">
-          <div class="text-xs font-semibold text-slate-600">${escapeHtml(x.part || 'definition')}</div>
-          <div class="text-sm text-slate-800">${escapeHtml(x.d)}</div>
-        </div>
-      `).join('');
-    } catch (e) {
-      pbDef.innerHTML = `<span class="text-slate-500">Could not load definition (offline or blocked).</span>`;
-    }
-  };
-
-  const openWordHelpBubble = (anchorEl, word, autoSpeak = true) => {
-    currentPronounceWord = cleanWordForPlayback(word);
-    if (!currentPronounceWord) return;
-
-    pbWord.textContent = currentPronounceWord;
-    pbLang.textContent = `Pronunciation voice: ${langSelect.value || 'en-US'} (device/browser voices)`;
-    pbDef.innerHTML = `<span class="text-slate-400">Loading definition…</span>`;
-
-    pronounceBubble.classList.remove('hidden');
-
-    requestAnimationFrame(() => {
-      positionBubbleNearElement(anchorEl);
-      if (autoSpeak) speakWord(currentPronounceWord, 1);
-      fetchDefinition(currentPronounceWord);
-    });
-  };
-
-  const closePronounceBubble = () => {
-    pronounceBubble.classList.add('hidden');
-    currentPronounceWord = '';
-    stopSpeech();
-  };
-
-  // ✅ ONLY double-click opens the bubble
-  const addWordHelpEvents = (el, getWordFn) => {
-    el.addEventListener('dblclick', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openWordHelpBubble(el, getWordFn(), true);
-    });
-  };
-
-  pbClose.addEventListener('click', closePronounceBubble);
-  pbPlay.addEventListener('click', () => speakWord(currentPronounceWord, 1));
-  pbSlow.addEventListener('click', () => speakWord(currentPronounceWord, 0.8));
-  pbRepeat.addEventListener('click', () => {
-    if (!currentPronounceWord) return;
-    stopSpeech();
-    speakWord(currentPronounceWord, 1);
-    setTimeout(() => speakWord(currentPronounceWord, 1), 850);
-  });
-  pbStop.addEventListener('click', stopSpeech);
-
-  document.addEventListener('click', (e) => {
-    if (pronounceBubble.classList.contains('hidden')) return;
-    if (pronounceBubble.contains(e.target)) return;
-    closePronounceBubble();
-  });
-
-  window.addEventListener('scroll', () => {
-    if (!pronounceBubble.classList.contains('hidden')) closePronounceBubble();
-  }, { passive: true });
-
-  // ---------------------------
-  // Tabs
-  // ---------------------------
-  const setActiveTab = (tab) => {
-    const isRead = tab === 'read';
-    const isReport = tab === 'report';
-    const isText = tab === 'text';
-
-    readTab.classList.toggle('hidden', !isRead);
-    reportTabPanel.classList.toggle('hidden', !isReport);
-    textTabPanel.classList.toggle('hidden', !isText);
-
-    const active = 'bg-slate-900 text-white ring-slate-900';
-    const inactive = 'bg-white text-slate-900 ring-slate-200 hover:bg-slate-50';
-
-    tabReadBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isRead ? active : inactive}`;
-    tabReportBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isReport ? active : inactive}`;
-    tabTextBtn.className = `inline-flex items-center justify-center rounded-xl px-4 py-3 text-base font-semibold shadow-sm ring-1 focus:outline-none focus:ring-4 focus:ring-slate-200 ${isText ? active : inactive}`;
-
-    if (isReport) renderParagraphReport();
-  };
-
-  // ---------------------------
-  // Rendering: header + read-along paragraph
-  // ---------------------------
-  const renderHeader = () => {
-    titleEl.innerHTML = `${escapeHtml(CONTENT.title)} <span class="text-slate-500 font-semibold">by ${escapeHtml(CONTENT.author || '')}</span>`;
-    contextEl.textContent = CONTENT.context || '';
-    paraTotalEl.textContent = String(CONTENT.paragraphs.length);
-    reportParaTotal.textContent = String(CONTENT.paragraphs.length);
-  };
-
-  const renderParagraph = () => {
-    const paragraph = CONTENT.paragraphs[paragraphIndex] || '';
-    const rawTokens = paragraph.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-
-    spanWords = rawTokens.map((tok) => {
-      const span = document.createElement('span');
-      span.textContent = tok;
-      span.className = 'transition-colors duration-200 cursor-pointer select-none';
-      addWordHelpEvents(span, () => tok);
-      return { original: tok, norm: normalizeWord(tok), el: span };
-    });
-
-    paragraphDisplay.innerHTML = '';
-    spanWords.forEach((w, idx) => {
-      paragraphDisplay.appendChild(w.el);
-      if (idx < spanWords.length - 1) paragraphDisplay.appendChild(document.createTextNode(' '));
-    });
-
-    paraIdxEl.textContent = String(paragraphIndex + 1);
-
-    clearRecognitionBufferUI();
-
-    prevBtn.disabled = paragraphIndex === 0;
-    nextBtn.disabled = paragraphIndex === CONTENT.paragraphs.length - 1;
-
-    [prevBtn, nextBtn].forEach(btn => {
-      btn.classList.toggle('opacity-50', btn.disabled);
-      btn.classList.toggle('cursor-not-allowed', btn.disabled);
-    });
-
-    if (!reportTabPanel.classList.contains('hidden')) renderParagraphReport();
-  };
-
-  const renderHighlights = () => {
-    const targetTokens = spanWords.map(w => w.norm).filter(Boolean);
-    const finalCount = Math.min(finalMatchedCount, targetTokens.length);
-    const combinedCount = Math.min(combinedMatchedCount, targetTokens.length);
-
-    let normalizedIndex = 0;
-
-    for (const w of spanWords) {
-      if (!w.norm) {
-        w.el.className = 'transition-colors duration-200 text-slate-900 cursor-pointer select-none';
-        continue;
-      }
-
-      const idx = normalizedIndex;
-
-      if (idx < finalCount) {
-        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-700 cursor-pointer select-none';
-      } else if (idx < combinedCount) {
-        w.el.className = 'transition-colors duration-200 font-semibold text-emerald-500 cursor-pointer select-none';
-      } else if (idx === combinedCount) {
-        w.el.className = 'transition-colors duration-200 text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-4 cursor-pointer select-none';
-      } else {
-        w.el.className = 'transition-colors duration-200 text-slate-900 cursor-pointer select-none';
-      }
-
-      normalizedIndex++;
-    }
-  };
-
-  // ---------------------------
-  // Paragraph report (current paragraph only)
-  // ---------------------------
-  const makeChip = (t, type) => {
-    const chip = document.createElement('span');
-    chip.className =
-      type === 'correct'
-        ? 'rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 cursor-pointer select-none'
-        : 'rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 cursor-pointer select-none';
-    chip.textContent = t.original;
-
-    addWordHelpEvents(chip, () => t.original);
-    return chip;
-  };
-
-  const renderParagraphReport = () => {
-    validateName();
-
-    const tokens = paragraphTokens[paragraphIndex] || [];
-    const best = Math.min(progress[paragraphIndex]?.bestFinalCount || 0, tokens.length);
-    const pct = tokens.length ? Math.round((best / tokens.length) * 100) : 0;
-
-    reportPara.textContent = String(paragraphIndex + 1);
-
-    statTotalWords.textContent = String(tokens.length);
-    statCorrectWords.textContent = String(best);
-    statAccuracy.textContent = `${pct}%`;
-    setAccuracyGraph(pct);
-
-    correctChipsEl.innerHTML = '';
-    incorrectChipsEl.innerHTML = '';
-
-    const correctTokens = tokens.slice(0, best);
-    const incorrectTokens = tokens.slice(best);
-
-    if (correctTokens.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'text-sm text-slate-400';
-      empty.textContent = '(none yet)';
-      correctChipsEl.appendChild(empty);
-    } else {
-      correctTokens.forEach(t => correctChipsEl.appendChild(makeChip(t, 'correct')));
-    }
-
-    if (incorrectTokens.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'text-sm text-slate-400';
-      empty.textContent = '(all words correct!)';
-      incorrectChipsEl.appendChild(empty);
-    } else {
-      incorrectTokens.forEach(t => incorrectChipsEl.appendChild(makeChip(t, 'incorrect')));
-    }
-  };
-
-  // ---------------------------
-  // Full Text + Highlight (selection-based) + fragments box
-  // ---------------------------
-  const renderColorPalette = () => {
-    colorPalette.innerHTML = '';
-    HIGHLIGHT_COLORS.forEach((c) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200';
-      btn.innerHTML = `
-        <span class="h-4 w-4 rounded-md ring-1 ring-slate-200" style="background:${c.bg}"></span>
-        <span>${c.name}</span>
-      `;
-
-      const markSelected = () => {
-        [...colorPalette.children].forEach(x => x.classList.remove('ring-2', 'ring-slate-900'));
-        btn.classList.add('ring-2', 'ring-slate-900');
-      };
-
-      btn.addEventListener('click', () => {
-        selectedHighlight = c;
-        markSelected();
-      });
-
-      colorPalette.appendChild(btn);
-      if (c.key === selectedHighlight.key) markSelected();
-    });
-  };
-
-  const buildFullTextDOM = () => {
-    fullTextContainer.innerHTML = '';
-
-    const t = document.createElement('div');
-    t.className = 'mb-4';
-    t.innerHTML = `
-      <div class="text-xl sm:text-2xl font-bold">${escapeHtml(CONTENT.title)}
-        <span class="text-slate-500 font-semibold">by ${escapeHtml(CONTENT.author)}</span>
-      </div>
-      <div class="mt-1 text-sm italic text-slate-600">${escapeHtml(CONTENT.context)}</div>
-    `;
-    fullTextContainer.appendChild(t);
-
-    CONTENT.paragraphs.forEach((p, idx) => {
-      const block = document.createElement('div');
-      block.className = 'mb-4 last:mb-0';
-
-      const label = document.createElement('div');
-      label.className = 'text-xs font-semibold text-slate-500 mb-1';
-      label.textContent = `Paragraph ${idx + 1}`;
-      block.appendChild(label);
-
-      const para = document.createElement('p');
-      para.className = 'text-lg leading-relaxed text-slate-900';
-
-      const rawTokens = p.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-      rawTokens.forEach((tok, i) => {
-        const span = document.createElement('span');
-        span.textContent = tok;
-        span.className = 'cursor-pointer select-text';
-        addWordHelpEvents(span, () => tok); // dblclick only
-        para.appendChild(span);
-        if (i < rawTokens.length - 1) para.appendChild(document.createTextNode(' '));
-      });
-
-      block.appendChild(para);
-      fullTextContainer.appendChild(block);
-    });
-  };
-
-  const selectionIsInside = (sel, container) => {
-    if (!sel || sel.rangeCount === 0) return false;
-    const range = sel.getRangeAt(0);
-    return container.contains(range.commonAncestorContainer);
-  };
-
-  const renderFragmentsBox = () => {
-    fragmentsGrid.innerHTML = '';
-
-    HIGHLIGHT_COLORS.forEach((c) => {
-      const col = document.createElement('div');
-      col.className = 'rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200 min-w-0';
-
-      const header = document.createElement('div');
-      header.className = 'flex items-center justify-between gap-2';
-      header.innerHTML = `
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="h-3.5 w-3.5 rounded-md ring-1 ring-slate-200" style="background:${c.bg}"></span>
-          <span class="text-sm font-bold text-slate-900 truncate">${c.name}</span>
-        </div>
-        <span class="text-xs font-semibold text-slate-500">${fragmentsByColor[c.key].length}</span>
-      `;
-      col.appendChild(header);
-
-      const list = document.createElement('div');
-      list.className = 'mt-3 flex flex-col gap-2';
-
-      const items = fragmentsByColor[c.key];
-      if (items.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'text-sm text-slate-400';
-        empty.textContent = '(no highlights yet)';
-        list.appendChild(empty);
-      } else {
-        items.slice().reverse().forEach((it) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'text-left rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200';
-          btn.innerHTML = `
-            <div class="text-xs font-semibold text-slate-500">Fragment</div>
-            <div class="mt-1 text-sm text-slate-900 break-words">${escapeHtml(clampSnippet(it.text))}</div>
-          `;
-          btn.addEventListener('click', () => {
-            if (it.markEl && document.body.contains(it.markEl)) {
-              it.markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              // gentle pulse
-              it.markEl.classList.add('ring-2', 'ring-slate-900');
-              setTimeout(() => it.markEl && it.markEl.classList.remove('ring-2', 'ring-slate-900'), 900);
+
+    <!-- JS LOGIC -->
+    <script>
+        /**
+         * APPLICATION DATA
+         * Defined content strictly as requested.
+         */
+        const BOOK_DATA = {
+            title: "THE WANDERER",
+            paragraphs: [
+                "I am not always such a dreamy girl, listening to the sea calling me. My father calls me Three-sided Sophie: one side is dreamy and romantic; one is logical and down-to-earth; and the third side is hardheaded and impulsive. He says I am either in dreamland or earthland or mule-land, and if I ever get the three together, I'll be all set, though I wonder where I will be then. If I'm not in dreamland or earthland or mule-land, where will I be?",
+                "My father says my logical side is most like him, and the dreamy side most like my mother, which isn't entirely fair, I don't think. My father likes to think of himself as a logical man, but he is the one who pores over pictures of exotic lands and says things like \"We should go on a safari!\" and \"We should zip through the air in a hot-air balloon!\"",
+                "And although my mother is a weaver and spins silky cloths and wears flowing dresses, she is the one who gives me sailing textbooks and makes me study water safety and weather prediction and says things like \"Yes, Sophie, I taught you to sail, but that doesn't mean I like the idea of you being out there alone on the water. I want you to stay home. Here. With me. Safe.\"",
+                "My father says he doesn't know who my hardheaded mule side resembles. He says mules don't run in the family. I am thirteen, and I am going to sail across the ocean. Although I would like to go alone-alone! alone! flying over the water!-I'm not.",
+                "My mule-self begged a place aboard a forty-five-foot sailboat with a motley crew: three uncles and two cousins. The uncles-Stew, Mo, and Dock-are my mother's brothers, and she told them, \"If the slightest harm comes to my Sophie, I'll string you all up by your toes.\""
+            ]
+        };
+
+        /**
+         * STATE MANAGEMENT
+         */
+        const app = {
+            state: {
+                currentTab: 'read',
+                currentParagraph: 0,
+                studentName: '',
+                isListening: false,
+                accent: 'en-US',
+                matchedIndices: [], // Set of indices of words correctly matched in current para
+                // We will also store a map of matched indices for ALL paragraphs for persistence
+                allProgress: {}, // { 0: [1,2], 1: [] }
+                currentHighlightColor: 'hl-yellow',
+                recognition: null,
+                bubbleWord: null,
+                processedWords: [] // Array of {word, cleanWord, matched} for current para
+            },
+
+            elements: {
+                tabs: ['read', 'report', 'full'],
+                readDisplay: document.getElementById('read-display'),
+                transcriptBox: document.getElementById('transcript-box'),
+                statusPill: document.getElementById('status-pill'),
+                nameInput: document.getElementById('student-name'),
+                startBtn: document.getElementById('btn-start'),
+                stopBtn: document.getElementById('btn-stop'),
+                fullTextContainer: document.getElementById('full-text-container'),
+                fragmentsContainer: document.getElementById('fragments-container'),
+                bubble: document.getElementById('helper-bubble')
+            },
+
+            /**
+             * INITIALIZATION
+             */
+            init() {
+                // Check Support
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    document.getElementById('browser-warning').classList.remove('hidden');
+                    this.elements.startBtn.disabled = true;
+                    this.elements.startBtn.textContent = "Not Supported";
+                    return;
+                }
+
+                // Initial Render (needed before loading state for highlights)
+                this.renderFullText();
+
+                // LOAD STATE FROM LOCALSTORAGE
+                this.loadState();
+
+                // Initialize Text Processing for Para (use loaded state if available)
+                this.loadParagraph(this.state.currentParagraph);
+                
+                // Name Input Listener
+                this.elements.nameInput.addEventListener('input', (e) => {
+                    this.state.studentName = e.target.value;
+                    this.updateControls();
+                    this.saveState(); // Autosave
+                });
+
+                // Set Date
+                const now = new Date();
+                document.getElementById('report-date').textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+
+                this.updateControls();
+                this.updateFragmentsPanel(); // Refresh highlight panel after load
+            },
+
+            /**
+             * AUTOSAVE LOGIC
+             */
+            saveState() {
+                const data = {
+                    studentName: this.state.studentName,
+                    currentParagraph: this.state.currentParagraph,
+                    // Save matches for current paragraph into the map
+                    allProgress: {
+                        ...this.state.allProgress,
+                        [this.state.currentParagraph]: this.state.matchedIndices
+                    },
+                    // Save Highlights (innerHTML is simplest for single file persistence)
+                    highlightsHTML: this.elements.fullTextContainer.innerHTML
+                };
+                
+                try {
+                    localStorage.setItem('wanderer_app_state', JSON.stringify(data));
+                    // Visual feedback
+                    const indicator = document.getElementById('autosave-indicator');
+                    indicator.style.opacity = '1';
+                    setTimeout(() => indicator.style.opacity = '0', 1000);
+                } catch (e) {
+                    console.error("Autosave failed (quota exceeded?)", e);
+                }
+            },
+
+            loadState() {
+                try {
+                    const saved = localStorage.getItem('wanderer_app_state');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        
+                        if (data.studentName) {
+                            this.state.studentName = data.studentName;
+                            this.elements.nameInput.value = data.studentName;
+                        }
+                        
+                        if (typeof data.currentParagraph === 'number') {
+                            this.state.currentParagraph = data.currentParagraph;
+                        }
+
+                        if (data.allProgress) {
+                            this.state.allProgress = data.allProgress;
+                        }
+
+                        // Restore Highlights
+                        if (data.highlightsHTML) {
+                            this.elements.fullTextContainer.innerHTML = data.highlightsHTML;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Load state failed", e);
+                }
+            },
+
+            /**
+             * CORE UI LOGIC
+             */
+            switchTab(tabId) {
+                this.state.currentTab = tabId;
+                
+                // Update Buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    const isActive = btn.id === `tab-btn-${tabId}`;
+                    btn.classList.toggle('border-indigo-600', isActive);
+                    btn.classList.toggle('text-indigo-600', isActive);
+                    btn.classList.toggle('border-transparent', !isActive);
+                    btn.classList.toggle('text-slate-500', !isActive);
+                });
+
+                // Update Sections
+                this.elements.tabs.forEach(t => {
+                    const el = document.getElementById(`tab-${t}`);
+                    if (t === tabId) {
+                        el.classList.remove('hidden');
+                        if (t === 'read') this.elements.readDisplay.scrollTop = 0; // Reset scroll
+                        if (t === 'report') this.renderReport();
+                        if (t === 'full') this.updateFragmentsPanel();
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
+
+                // Auto-pause if leaving read tab
+                if (tabId !== 'read' && this.state.isListening) {
+                    this.stopReading();
+                }
+            },
+
+            updateControls() {
+                const hasName = this.state.studentName.trim().length > 0;
+                
+                // Status Pill Logic
+                const pill = this.elements.statusPill;
+                const dot = pill.querySelector('span');
+                
+                if (!hasName) {
+                    pill.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 flex items-center gap-2";
+                    dot.className = "w-2 h-2 rounded-full bg-slate-400";
+                    pill.childNodes[2].textContent = "Enter Name First";
+                    this.elements.startBtn.disabled = true;
+                } else if (this.state.isListening) {
+                    pill.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-2 animate-pulse";
+                    dot.className = "w-2 h-2 rounded-full bg-green-500";
+                    pill.childNodes[2].textContent = "Listening...";
+                    this.elements.startBtn.disabled = true;
+                    this.elements.stopBtn.disabled = false;
+                } else {
+                    pill.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 flex items-center gap-2";
+                    dot.className = "w-2 h-2 rounded-full bg-indigo-500";
+                    pill.childNodes[2].textContent = "Ready to Read";
+                    this.elements.startBtn.disabled = false;
+                    this.elements.stopBtn.disabled = true;
+                }
+            },
+
+            /**
+             * READ MODE LOGIC
+             */
+            loadParagraph(index) {
+                // Bounds check
+                if (index < 0) index = 0;
+                if (index >= BOOK_DATA.paragraphs.length) index = BOOK_DATA.paragraphs.length - 1;
+
+                // Stop reading if switching
+                if (this.state.isListening) {
+                   this.stopReading();
+                }
+                
+                this.state.currentParagraph = index;
+                document.getElementById('display-para-num').textContent = index + 1;
+
+                // Process Text -> Words
+                const rawText = BOOK_DATA.paragraphs[index];
+                const words = rawText.split(/\s+/);
+                
+                this.state.processedWords = words.map((w, i) => ({
+                    original: w,
+                    clean: w.replace(/[^\w]/g, '').toLowerCase(),
+                    index: i
+                }));
+
+                // Load progress if available, else empty
+                this.state.matchedIndices = this.state.allProgress[index] || [];
+
+                this.renderReadDisplay();
+                this.elements.transcriptBox.textContent = "...";
+                
+                this.saveState(); // Save current paragraph position
+            },
+
+            renderReadDisplay() {
+                const container = this.elements.readDisplay;
+                container.innerHTML = '';
+
+                this.state.processedWords.forEach((wordObj, i) => {
+                    const span = document.createElement('span');
+                    span.textContent = wordObj.original + ' '; // Add space back
+                    span.dataset.index = i;
+                    span.dataset.clean = wordObj.clean;
+                    span.className = "inline-block py-1 px-1 rounded transition-colors duration-200 cursor-pointer hover:bg-slate-50";
+                    
+                    // Style based on match status
+                    if (this.state.matchedIndices.includes(i)) {
+                        span.classList.add('text-green-600', 'font-bold');
+                    } else {
+                        span.classList.add('text-slate-400');
+                    }
+
+                    // Visual indicator of current position (first unmatched word)
+                    const lastMatched = this.state.matchedIndices.length > 0 ? Math.max(...this.state.matchedIndices) : -1;
+                    if (i === lastMatched + 1) {
+                         span.classList.add('underline', 'decoration-indigo-300', 'decoration-4', 'underline-offset-4', 'text-slate-600');
+                    }
+
+                    container.appendChild(span);
+                });
+            },
+
+            changeParagraph(direction) {
+                const newIndex = this.state.currentParagraph + direction;
+                if (newIndex >= 0 && newIndex < BOOK_DATA.paragraphs.length) {
+                    this.loadParagraph(newIndex);
+                }
+            },
+
+            restartParagraph() {
+                this.stopReading();
+                this.state.matchedIndices = [];
+                // Update persistent progress
+                this.state.allProgress[this.state.currentParagraph] = [];
+                this.renderReadDisplay();
+                this.elements.transcriptBox.textContent = "...";
+                this.saveState();
+            },
+
+            /**
+             * SPEECH RECOGNITION
+             */
+            startReading() {
+                if (this.state.isListening) return;
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.state.recognition = new SpeechRecognition();
+                
+                // Config
+                this.state.recognition.lang = document.getElementById('accent-selector').value;
+                this.state.recognition.continuous = true;
+                this.state.recognition.interimResults = true;
+
+                this.state.recognition.onstart = () => {
+                    this.state.isListening = true;
+                    this.updateControls();
+                };
+
+                this.state.recognition.onend = () => {
+                    // Auto restart if supposedly listening (fixes silence timeouts)
+                    if (this.state.isListening) {
+                        try { this.state.recognition.start(); } catch(e) { this.state.isListening = false; this.updateControls(); }
+                    } else {
+                        this.updateControls();
+                    }
+                };
+
+                this.state.recognition.onerror = (event) => {
+                    console.error("Speech Error", event.error);
+                    if (event.error === 'not-allowed') {
+                        alert("Microphone access denied. Please allow microphone access.");
+                        this.state.isListening = false;
+                        this.updateControls();
+                    }
+                };
+
+                this.state.recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                            this.processMatch(event.results[i][0].transcript);
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    
+                    // Live feedback
+                    this.elements.transcriptBox.textContent = interimTranscript || (finalTranscript.slice(-50)) || "...";
+                };
+
+                this.state.recognition.start();
+            },
+
+            stopReading() {
+                this.state.isListening = false;
+                if (this.state.recognition) {
+                    this.state.recognition.stop();
+                }
+                this.updateControls();
+            },
+
+            processMatch(transcript) {
+                // Tokenize input
+                const inputWords = transcript.toLowerCase().replace(/[^\w\s]/g, '').trim().split(/\s+/);
+                
+                // Where are we in the paragraph?
+                const words = this.state.processedWords;
+                let lastMatchedIndex = this.state.matchedIndices.length > 0 ? Math.max(...this.state.matchedIndices) : -1;
+                let searchStartIndex = lastMatchedIndex + 1;
+
+                if (searchStartIndex >= words.length) return; // Paragraph done
+
+                let madeMatch = false;
+
+                // Simple sliding window match
+                inputWords.forEach(spokenWord => {
+                    if (searchStartIndex < words.length) {
+                        const target = words[searchStartIndex].clean;
+                        if (spokenWord === target) {
+                            // Match!
+                            this.state.matchedIndices.push(searchStartIndex);
+                            searchStartIndex++;
+                            madeMatch = true;
+                        }
+                    }
+                });
+
+                if (madeMatch) {
+                    this.renderReadDisplay();
+                    this.saveState(); // Autosave matched progress
+                    
+                    // Scroll to active word logic
+                    const activeSpan = this.elements.readDisplay.querySelector(`span[data-index="${searchStartIndex}"]`);
+                    if (activeSpan) {
+                         activeSpan.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                }
+            },
+
+            /**
+             * REPORT GENERATION
+             */
+            renderReport() {
+                // Update Header info
+                document.getElementById('report-student-name').textContent = this.state.studentName || "Guest Student";
+                document.getElementById('report-para-num').textContent = this.state.currentParagraph + 1;
+
+                // Calculate Stats
+                const total = this.state.processedWords.length;
+                const correct = this.state.matchedIndices.length;
+                const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
+
+                // Update DOM
+                document.getElementById('stat-total').textContent = total;
+                document.getElementById('stat-correct').textContent = correct;
+                document.getElementById('stat-accuracy').textContent = percent + '%';
+                
+                // Animate Bar
+                setTimeout(() => {
+                    document.getElementById('accuracy-bar').style.width = percent + '%';
+                    // Color code bar
+                    const bar = document.getElementById('accuracy-bar');
+                    if (percent < 50) bar.className = "h-full bg-red-500 transition-all duration-1000";
+                    else if (percent < 80) bar.className = "h-full bg-yellow-400 transition-all duration-1000";
+                    else bar.className = "h-full bg-green-500 transition-all duration-1000";
+                }, 100);
+
+                // Word Breakdown
+                const chipContainer = document.getElementById('report-words');
+                chipContainer.innerHTML = '';
+                
+                this.state.processedWords.forEach((w, i) => {
+                    const isCorrect = this.state.matchedIndices.includes(i);
+                    const chip = document.createElement('span');
+                    chip.textContent = w.original;
+                    chip.className = `px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors border ${
+                        isCorrect 
+                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' 
+                        : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                    }`;
+                    chipContainer.appendChild(chip);
+                });
+            },
+
+            downloadReport() {
+                const reportCard = document.getElementById('report-card');
+                html2canvas(reportCard, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `ReadingReport_${this.state.studentName || 'Student'}_P${this.state.currentParagraph+1}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+            },
+
+            /**
+             * FULL TEXT & HIGHLIGHTING
+             */
+            renderFullText() {
+                // Only render initial structure if empty (so we don't overwrite loaded highlights)
+                const container = this.elements.fullTextContainer;
+                if (container.children.length > 0) return;
+
+                BOOK_DATA.paragraphs.forEach((para, index) => {
+                    const p = document.createElement('p');
+                    p.className = "mb-6";
+                    p.innerHTML = `<span class="font-bold text-slate-300 mr-2">${index + 1}</span>` + para;
+                    container.appendChild(p);
+                });
+            },
+
+            setHighlightColor(colorClass) {
+                this.state.currentHighlightColor = colorClass;
+                // Visual feedback on palette
+                document.querySelectorAll('[data-color]').forEach(btn => {
+                    if (btn.dataset.color === colorClass) {
+                        btn.classList.add('ring-slate-400');
+                    } else {
+                        btn.classList.remove('ring-slate-400');
+                    }
+                });
+            },
+
+            applyHighlight() {
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+
+                const range = selection.getRangeAt(0);
+                // Ensure selection is within the full text container
+                if (!this.elements.fullTextContainer.contains(range.commonAncestorContainer)) return;
+
+                const mark = document.createElement('mark');
+                mark.className = this.state.currentHighlightColor;
+                
+                try {
+                    range.surroundContents(mark);
+                    selection.removeAllRanges(); // Clear selection
+                    this.updateFragmentsPanel();
+                    this.saveState(); // Autosave Highlights
+                } catch (e) {
+                    alert("Cannot highlight across multiple paragraphs or overlapping elements.");
+                }
+            },
+
+            clearHighlights() {
+                // Remove all marks but keep text
+                const marks = this.elements.fullTextContainer.querySelectorAll('mark');
+                marks.forEach(mark => {
+                    const parent = mark.parentNode;
+                    while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+                    parent.removeChild(mark);
+                });
+                this.updateFragmentsPanel();
+                this.saveState(); // Autosave Highlights
+            },
+
+            updateFragmentsPanel() {
+                const panel = this.elements.fragmentsContainer;
+                panel.innerHTML = '';
+                
+                // Group by color
+                const colors = ['hl-yellow', 'hl-green', 'hl-blue', 'hl-pink'];
+                const colorNames = { 'hl-yellow': 'Yellow', 'hl-green': 'Green', 'hl-blue': 'Blue', 'hl-pink': 'Pink' };
+                const marks = Array.from(this.elements.fullTextContainer.querySelectorAll('mark'));
+
+                if (marks.length === 0) {
+                    panel.innerHTML = '<p class="text-sm text-slate-400 italic text-center mt-10">(No highlights yet)</p>';
+                    return;
+                }
+
+                colors.forEach(color => {
+                    const colorMarks = marks.filter(m => m.classList.contains(color));
+                    if (colorMarks.length > 0) {
+                        // Section Header
+                        const header = document.createElement('div');
+                        header.className = "text-xs font-bold uppercase tracking-wide text-slate-500 mt-4 mb-2 pb-1 border-b border-slate-100";
+                        header.textContent = colorNames[color];
+                        panel.appendChild(header);
+
+                        // Fragments
+                        colorMarks.forEach(mark => {
+                            const card = document.createElement('div');
+                            card.className = "bg-slate-50 border border-slate-100 p-2 rounded text-sm text-slate-700 mb-2 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-colors line-clamp-2";
+                            card.textContent = mark.textContent;
+                            card.onclick = () => {
+                                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                // Temporary flash effect
+                                mark.style.opacity = '0.5';
+                                setTimeout(() => mark.style.opacity = '1', 300);
+                            };
+                            panel.appendChild(card);
+                        });
+                    }
+                });
+            },
+
+            /**
+             * BUBBLE & HELPERS
+             */
+            handleBubbleClick(event) {
+                // Get clicked word
+                const selection = window.getSelection();
+                // Basic cleanup: remove punctuation
+                const word = selection.toString().trim().replace(/[.,!?;:"()]/g, '');
+                
+                if (word && word.length > 1) {
+                    this.showBubble(word, event.pageX, event.pageY);
+                }
+            },
+
+            showBubble(word, x, y) {
+                const bubble = this.elements.bubble;
+                this.state.bubbleWord = word;
+                document.getElementById('bubble-word').textContent = word;
+                
+                // Position Bubble
+                bubble.style.left = `${Math.min(x - 20, window.innerWidth - 300)}px`; // Prevent overflow right
+                bubble.style.top = `${y + 20}px`;
+                bubble.classList.remove('hidden');
+
+                // WORDREFERENCE LINK
+                // Since fetching definitions via JS is blocked by CORS/API limits, 
+                // we provide a direct link to the reliable source requested.
+                const defContainer = document.getElementById('bubble-def');
+                defContainer.innerHTML = `
+                    <div class="mt-2 text-center">
+                        <a href="https://www.wordreference.com/definition/${word}" 
+                           target="_blank"
+                           class="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 underline font-semibold">
+                           Read Definition on WordReference ↗
+                        </a>
+                        <p class="text-slate-500 mt-1 not-italic">Opens in new tab</p>
+                    </div>
+                `;
+
+                // Close on click outside
+                const closeHandler = (e) => {
+                    // Allow clicking inside the bubble (especially the link)
+                    if (bubble.contains(e.target)) return;
+                    
+                    if (!bubble.contains(e.target) && e.target.tagName !== 'SPAN' && e.target.tagName !== 'MARK') {
+                        this.closeBubble();
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 100);
+            },
+
+            closeBubble() {
+                this.elements.bubble.classList.add('hidden');
+                window.getSelection().removeAllRanges();
+            },
+
+            speakWord(rate, repeats = 1) {
+                if (!this.state.bubbleWord) return;
+                
+                const utterance = new SpeechSynthesisUtterance(this.state.bubbleWord);
+                utterance.rate = rate;
+                utterance.lang = document.getElementById('accent-selector').value;
+
+                let count = 0;
+                utterance.onend = () => {
+                    count++;
+                    if (count < repeats) {
+                        window.speechSynthesis.speak(utterance);
+                    }
+                };
+                window.speechSynthesis.speak(utterance);
             }
-          });
-          list.appendChild(btn);
-        });
-      }
+        };
 
-      col.appendChild(list);
-      fragmentsGrid.appendChild(col);
-    });
-  };
+        // Boot
+        window.addEventListener('DOMContentLoaded', () => app.init());
 
-  const applyHighlightToSelection = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-
-    if (!selectionIsInside(sel, fullTextContainer)) {
-      setStatus('Select text inside Full Text tab', '#f59e0b');
-      return;
-    }
-
-    const range = sel.getRangeAt(0);
-    if (range.collapsed) {
-      setStatus('Select some text first', '#f59e0b');
-      return;
-    }
-
-    // Save selected text first (before DOM changes)
-    const selectedText = sel.toString();
-    const cleaned = selectedText.replace(/\s+/g, ' ').trim();
-    if (!cleaned) {
-      setStatus('Selection is empty', '#f59e0b');
-      return;
-    }
-
-    const mark = document.createElement('mark');
-    mark.className = 'rounded-md px-0.5';
-    mark.style.background = selectedHighlight.bg;
-    mark.style.color = '#0f172a';
-    mark.dataset.colorKey = selectedHighlight.key;
-    mark.dataset.fragmentId = String(fragmentIdSeq);
-
-    try {
-      range.surroundContents(mark);
-    } catch (e) {
-      const frag = range.extractContents();
-      mark.appendChild(frag);
-      range.insertNode(mark);
-    }
-
-    // Store fragment (link to mark element for scroll)
-    const id = fragmentIdSeq++;
-    fragmentsByColor[selectedHighlight.key].push({ id, text: cleaned, markEl: mark });
-
-    sel.removeAllRanges();
-    renderFragmentsBox();
-    setStatus('Highlighted', '#94a3b8');
-  };
-
-  const clearAllHighlights = () => {
-    const marks = fullTextContainer.querySelectorAll('mark');
-    marks.forEach((m) => {
-      const parent = m.parentNode;
-      while (m.firstChild) parent.insertBefore(m.firstChild, m);
-      parent.removeChild(m);
-      parent.normalize();
-    });
-
-    // Clear fragments
-    HIGHLIGHT_COLORS.forEach(c => fragmentsByColor[c.key] = []);
-    renderFragmentsBox();
-
-    setStatus('Highlights cleared', '#94a3b8');
-  };
-
-  // ---------------------------
-  // Recognition lifecycle
-  // ---------------------------
-  const initRecognition = () => {
-    if (!isSupported) return;
-
-    recognition = new SpeechRecognition();
-    recognition.lang = langSelect.value || 'en-US';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      listening = true;
-      micBtn.textContent = 'Stop';
-      setStatus('Listening...', '#10b981');
-    };
-
-    recognition.onend = () => {
-      listening = false;
-      micBtn.textContent = 'Start Reading';
-      setStatus('Paused', '#94a3b8');
-    };
-
-    recognition.onerror = (e) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        setStatus('Microphone access denied', '#ef4444');
-      } else if (e.error === 'no-speech') {
-        setStatus('No speech detected', '#f59e0b');
-      } else {
-        setStatus(`Error: ${e.error}`, '#ef4444');
-      }
-    };
-
-    recognition.onresult = (event) => {
-      let newInterim = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const res = event.results[i];
-        const text = res[0].transcript;
-        if (res.isFinal) accumulatedFinalText += (text + ' ');
-        else newInterim += (text + ' ');
-      }
-
-      accumulatedFinalText = accumulatedFinalText.replace(/\s+/g, ' ').trim();
-      interimText = newInterim.replace(/\s+/g, ' ').trim();
-
-      setTranscript(accumulatedFinalText, interimText);
-
-      const targetTokens = spanWords.map(w => w.norm).filter(Boolean);
-      finalMatchedCount = computeMatchedCount(tokenize(accumulatedFinalText), targetTokens);
-      combinedMatchedCount = computeMatchedCount(tokenize((accumulatedFinalText + ' ' + interimText).trim()), targetTokens);
-
-      const tLen = paragraphTokens[paragraphIndex]?.length || targetTokens.length;
-      const cur = progress[paragraphIndex];
-      if (cur) {
-        cur.bestFinalCount = Math.min(Math.max(cur.bestFinalCount, finalMatchedCount), tLen);
-        cur.bestCombinedCount = Math.min(Math.max(cur.bestCombinedCount, combinedMatchedCount), tLen);
-      }
-
-      renderHighlights();
-
-      if (!reportTabPanel.classList.contains('hidden')) {
-        renderParagraphReport();
-      }
-    };
-  };
-
-  const startListening = () => {
-    if (!isSupported) return;
-    if (!recognition) initRecognition();
-    try { recognition.start(); } catch (_) {}
-  };
-
-  const stopListening = () => {
-    if (!isSupported || !recognition) return;
-    try { recognition.stop(); } catch (_) {}
-  };
-
-  const resetEngineKeepBuffers = (resume) => {
-    if (!isSupported) return;
-    const shouldResume = !!resume;
-
-    try { recognition && recognition.abort(); } catch (_) {}
-    recognition = null;
-    initRecognition();
-
-    setTranscript(accumulatedFinalText, interimText);
-    renderHighlights();
-
-    if (shouldResume) setTimeout(() => startListening(), 120);
-  };
-
-  const hardResetForParagraphChange = (resume) => {
-    const shouldResume = !!resume;
-
-    try { recognition && recognition.abort(); } catch (_) {}
-    recognition = null;
-    initRecognition();
-
-    clearRecognitionBufferUI();
-
-    if (shouldResume) setTimeout(() => startListening(), 120);
-  };
-
-  // ---------------------------
-  // Navigation
-  // ---------------------------
-  const goToParagraph = (idx) => {
-    const clamped = Math.max(0, Math.min(idx, CONTENT.paragraphs.length - 1));
-    if (clamped === paragraphIndex) return;
-
-    const wasListening = listening;
-    if (wasListening) stopListening();
-
-    paragraphIndex = clamped;
-    renderParagraph();
-
-    hardResetForParagraphChange(wasListening);
-  };
-
-  const restartParagraph = () => {
-    const wasListening = listening;
-    if (wasListening) stopListening();
-    hardResetForParagraphChange(wasListening);
-  };
-
-  // ---------------------------
-  // Screenshot Download (current paragraph report)
-  // ---------------------------
-  const pad2 = (n) => String(n).padStart(2, '0');
-  const makeTimestamp = () => {
-    const d = new Date();
-    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
-  };
-
-  const downloadDataUrl = (dataUrl, filename) => {
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const captureReportAndDownload = async () => {
-    if (!requireNameOrFocus()) return;
-
-    renderParagraphReport();
-
-    const format = (downloadFormat.value || 'png').toLowerCase();
-    const isJpg = format === 'jpg' || format === 'jpeg';
-
-    try {
-      downloadHint.textContent = 'Creating image…';
-
-      const canvas = await html2canvas(reportCapture, {
-        backgroundColor: '#f8fafc',
-        scale: 2,
-        useCORS: true
-      });
-
-      const who = sanitizeFilenamePart(studentName);
-      const stamp = makeTimestamp();
-      const p = `p${paragraphIndex + 1}`;
-
-      if (isJpg) {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        downloadDataUrl(dataUrl, `read-along_${who}_${p}_${stamp}.jpg`);
-      } else {
-        const dataUrl = canvas.toDataURL('image/png');
-        downloadDataUrl(dataUrl, `read-along_${who}_${p}_${stamp}.png`);
-      }
-
-      downloadHint.textContent = 'Downloaded.';
-      setTimeout(() => (downloadHint.textContent = ''), 2000);
-    } catch (err) {
-      console.error(err);
-      downloadHint.textContent = 'Could not create image (try Chrome/Edge).';
-      setTimeout(() => (downloadHint.textContent = ''), 4000);
-    }
-  };
-
-  // ---------------------------
-  // Events
-  // ---------------------------
-  studentNameInput.addEventListener('input', () => {
-    validateName();
-    if (studentNameInput.value.trim().length > 0) setStatus('Paused', '#94a3b8');
-  });
-
-  studentNameInput.addEventListener('blur', validateName);
-
-  micBtn.addEventListener('click', () => {
-    if (!isSupported) return;
-    if (!requireNameOrFocus()) return;
-
-    if (!recognition) initRecognition();
-    if (!listening) startListening();
-    else stopListening();
-  });
-
-  prevBtn.addEventListener('click', () => goToParagraph(paragraphIndex - 1));
-  nextBtn.addEventListener('click', () => goToParagraph(paragraphIndex + 1));
-  restartBtn.addEventListener('click', restartParagraph);
-
-  clearTranscriptBtn.addEventListener('click', () => {
-    const wasListening = listening;
-    if (wasListening) stopListening();
-
-    clearRecognitionBufferUI();
-    resetEngineKeepBuffers(false);
-
-    if (wasListening) setTimeout(() => startListening(), 120);
-  });
-
-  langSelect.addEventListener('change', () => {
-    loadVoices();
-
-    const wasListening = listening;
-    if (wasListening) stopListening();
-
-    resetEngineKeepBuffers(false);
-    if (wasListening) setTimeout(() => startListening(), 120);
-
-    if (!pronounceBubble.classList.contains('hidden') && currentPronounceWord) {
-      pbLang.textContent = `Pronunciation voice: ${langSelect.value || 'en-US'} (device/browser voices)`;
-    }
-  });
-
-  tabReadBtn.addEventListener('click', () => setActiveTab('read'));
-  tabReportBtn.addEventListener('click', () => setActiveTab('report'));
-  tabTextBtn.addEventListener('click', () => setActiveTab('text'));
-
-  refreshReportBtn.addEventListener('click', renderParagraphReport);
-
-  resetThisParaBtn.addEventListener('click', () => {
-    progress[paragraphIndex].bestFinalCount = 0;
-    progress[paragraphIndex].bestCombinedCount = 0;
-    renderParagraphReport();
-    setStatus('Paragraph result reset', '#94a3b8');
-  });
-
-  downloadReportBtn.addEventListener('click', captureReportAndDownload);
-
-  applyHighlightBtn.addEventListener('click', () => applyHighlightToSelection());
-  clearHighlightsBtn.addEventListener('click', () => clearAllHighlights());
-
-  // ---------------------------
-  // Init
-  // ---------------------------
-  if (window.speechSynthesis) {
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = () => loadVoices();
-  }
-
-  buildTokensAndProgress();
-  renderHeader();
-  renderParagraph();
-  renderColorPalette();
-  buildFullTextDOM();
-  renderFragmentsBox();
-  setAccuracyGraph(0);
-
-  setActiveTab('read');
-
-  validateName();
-  if (isSupported) {
-    initRecognition();
-    setStatus('Enter your name to start', '#f59e0b');
-  }
-})();
-</script>
+    </script>
 </body>
 </html>
